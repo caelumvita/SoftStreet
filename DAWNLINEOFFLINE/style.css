@@ -1,0 +1,76 @@
+html, body {
+  margin: 0;
+  overflow: hidden;
+  background: black;
+  touch-action: none;
+  user-select: none;
+}
+
+canvas {
+  display: block;
+}
+
+#crosshair {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  color: white;
+  font-size: 26px;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+#mobileControls {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  #mobileControls {
+    display: block;
+  }
+}
+
+#joystick {
+  position: fixed;
+  left: 30px;
+  bottom: 30px;
+  width: 120px;
+  height: 120px;
+  border: 2px solid white;
+  border-radius: 50%;
+  z-index: 10;
+}
+
+#stick {
+  position: absolute;
+  left: 35px;
+  top: 35px;
+  width: 50px;
+  height: 50px;
+  background: white;
+  border-radius: 50%;
+}
+
+#fireButton {
+  position: fixed;
+  right: 35px;
+  bottom: 45px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  font-weight: bold;
+  z-index: 12;
+}
+
+#lookArea {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 55vw;
+  height: 100vh;
+  z-index: 8;
+}
