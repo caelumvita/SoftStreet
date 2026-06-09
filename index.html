@@ -1,12 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
-  <title>DAWNLINE TEST</title>
+  <meta charset="UTF-8">
+  <title>DAWNLINE</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="manifest" href="./manifest.json">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
-<body style="background: green; color: white; font-size: 40px;">
-  DAWNLINE WORKS
+<body>
+  <div id="crosshair">+</div>
+
+  <div id="mobileControls">
+    <div id="joystick"><div id="stick"></div></div>
+    <button id="fireButton">FIRE</button>
+    <div id="lookArea"></div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
-
-
-
