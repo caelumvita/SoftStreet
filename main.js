@@ -1,5 +1,5 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js";
-import { OBJLoader } from "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/OBJLoader.js";
+import * as THREE from "three";
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x6f8799);
@@ -14,170 +14,127 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(0, 1.7, 5);
 camera.rotation.order = "YXZ";
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true
-});
-
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Світло
+scene.add(camera);
+
+// світло
 const sun = new THREE.DirectionalLight(0xffffff, 2);
 sun.position.set(5, 10, 5);
 scene.add(sun);
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+const ambient = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambient);
 
-// Земля
-const groundGeometry = new THREE.PlaneGeometry(200, 200);
-const groundMaterial = new THREE.MeshStandardMaterial({
-  color: 0x344034
-});
-
-const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+// земля
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(200, 200),
+  new THREE.MeshStandardMaterial({ color: 0x344034 })
+);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-// Декілька тестових кубів
-for (let i = 0; i < 10; i++) {
-  const box = new THREE.Mesh(
-    new THREE.BoxGeometry(2, 2, 2),
-    new THREE.MeshStandardMaterial({ color: 0x777777 })
-  );
+// тестовий куб, щоб точно бачити, що гра працює
+const cube = new THREE.Mesh(
+  new THREE.BoxGeometry(2, 2, 2),
+  new THREE.MeshStandardMaterial({ color: 0x777777 })
+);
+cube.position.set(0, 1, -8);
+scene.add(cube);
 
-  box.position.set(
-    Math.random() * 30 - 15,
-    1,
-    Math.random() * -30
-  );
-
-  scene.add(box);
-}
-
-// Автомат у руці
+// M4
 let gun = null;
 
-const objLoader = new OBJLoader();
+const loader = new OBJLoader();
 
-objLoader.load(
+loader.load(
   "./models/m4a1_s.obj",
   (obj) => {
     gun = obj;
 
+    gun.traverse((child) => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshStandardMaterial({ color: 0x222222 });
+      }
+    });
+
     gun.scale.set(0.08, 0.08, 0.08);
-
-    // Позиція автомата перед камерою
-    gun.position.set(0.35, -0.32, -0.8);
-
-    // Якщо модель дивиться не туди — ці rotation треба буде міняти
+    gun.position.set(0.35, -0.35, -0.85);
     gun.rotation.set(0, Math.PI, 0);
 
     camera.add(gun);
+    console.log("M4 loaded");
   },
   undefined,
   (error) => {
-    console.error("Не вдалося завантажити M4 OBJ:", error);
+    console.error("M4 load error:", error);
   }
 );
 
-scene.add(camera);
-
-// Звук пострілу
+// звук
 const shotSound = new Audio("./sound/universfield-gunshot-352466.mp3");
 shotSound.volume = 0.6;
 
-// Клавіатура
+// керування
 const keys = {};
-
-document.addEventListener("keydown", (event) => {
-  keys[event.code] = true;
-});
-
-document.addEventListener("keyup", (event) => {
-  keys[event.code] = false;
-});
-
-// Мишка
 let yaw = 0;
 let pitch = 0;
 
+document.addEventListener("keydown", e => keys[e.code] = true);
+document.addEventListener("keyup", e => keys[e.code] = false);
+
 document.body.addEventListener("click", () => {
-  document.body.requestPointerLock();
+  document.body.requestPointerLock?.();
 });
 
-document.addEventListener("mousemove", (event) => {
+document.addEventListener("mousemove", (e) => {
   if (document.pointerLockElement === document.body) {
-    yaw -= event.movementX * 0.002;
-    pitch -= event.movementY * 0.002;
-
+    yaw -= e.movementX * 0.002;
+    pitch -= e.movementY * 0.002;
     pitch = Math.max(-1.4, Math.min(1.4, pitch));
   }
 });
 
-// Забороняємо меню правої кнопки
-document.addEventListener("contextmenu", (event) => {
-  event.preventDefault();
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+document.addEventListener("mousedown", (e) => {
+  if (e.button === 2) shoot();
 });
 
-// Стрільба правою кнопкою миші
-document.addEventListener("mousedown", (event) => {
-  if (event.button === 2) {
-    shoot();
-  }
-});
-
-// Стрільба
 let canShoot = true;
 
 function shoot() {
   if (!canShoot) return;
-
   canShoot = false;
 
   shotSound.currentTime = 0;
-  shotSound.play();
+  shotSound.play().catch(() => {});
 
-  // Простий відкат зброї назад
   if (gun) {
     gun.position.z += 0.08;
-
-    setTimeout(() => {
-      gun.position.z -= 0.08;
-    }, 70);
+    setTimeout(() => gun.position.z -= 0.08, 70);
   }
 
-  // Простий raycast пострілу
-  const raycaster = new THREE.Raycaster();
-  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-
-  const hits = raycaster.intersectObjects(scene.children, true);
-
-  if (hits.length > 0) {
-    console.log("Попадання в:", hits[0].object);
-  }
-
-  setTimeout(() => {
-    canShoot = true;
-  }, 120);
+  setTimeout(() => canShoot = true, 120);
 }
 
-// Джойстик
+// мобільний джойстик
 let joyX = 0;
 let joyY = 0;
 
 const joystick = document.getElementById("joystick");
 const stick = document.getElementById("stick");
 
-joystick.addEventListener("touchmove", (event) => {
-  event.preventDefault();
+joystick.addEventListener("touchmove", (e) => {
+  e.preventDefault();
 
-  const touch = event.touches[0];
+  const touch = e.touches[0];
   const rect = joystick.getBoundingClientRect();
 
   const x = touch.clientX - rect.left - 60;
   const y = touch.clientY - rect.top - 60;
-
   const max = 40;
 
   joyX = Math.max(-1, Math.min(1, x / max));
@@ -190,50 +147,43 @@ joystick.addEventListener("touchmove", (event) => {
 joystick.addEventListener("touchend", () => {
   joyX = 0;
   joyY = 0;
-
   stick.style.left = "35px";
   stick.style.top = "35px";
 });
 
-// Камера на телефоні
+// камера на телефоні
 const lookArea = document.getElementById("lookArea");
+let lastX = null;
+let lastY = null;
 
-let lastTouchX = null;
-let lastTouchY = null;
+lookArea.addEventListener("touchmove", (e) => {
+  e.preventDefault();
 
-lookArea.addEventListener("touchmove", (event) => {
-  event.preventDefault();
+  const touch = e.touches[0];
 
-  const touch = event.touches[0];
-
-  if (lastTouchX !== null && lastTouchY !== null) {
-    const dx = touch.clientX - lastTouchX;
-    const dy = touch.clientY - lastTouchY;
+  if (lastX !== null) {
+    const dx = touch.clientX - lastX;
+    const dy = touch.clientY - lastY;
 
     yaw -= dx * 0.006;
     pitch -= dy * 0.006;
-
     pitch = Math.max(-1.4, Math.min(1.4, pitch));
   }
 
-  lastTouchX = touch.clientX;
-  lastTouchY = touch.clientY;
+  lastX = touch.clientX;
+  lastY = touch.clientY;
 });
 
 lookArea.addEventListener("touchend", () => {
-  lastTouchX = null;
-  lastTouchY = null;
+  lastX = null;
+  lastY = null;
 });
 
-// Кнопка стрільби на телефоні
-const fireButton = document.getElementById("fireButton");
-
-fireButton.addEventListener("touchstart", (event) => {
-  event.preventDefault();
+document.getElementById("fireButton").addEventListener("touchstart", (e) => {
+  e.preventDefault();
   shoot();
 });
 
-// Рух
 const speed = 0.08;
 
 function animate() {
@@ -242,33 +192,13 @@ function animate() {
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
-  const forward = new THREE.Vector3(
-    -Math.sin(yaw),
-    0,
-    -Math.cos(yaw)
-  );
+  const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
 
-  const right = new THREE.Vector3(
-    Math.cos(yaw),
-    0,
-    -Math.sin(yaw)
-  );
-
-  if (keys["KeyW"]) {
-    camera.position.add(forward.clone().multiplyScalar(speed));
-  }
-
-  if (keys["KeyS"]) {
-    camera.position.add(forward.clone().multiplyScalar(-speed));
-  }
-
-  if (keys["KeyA"]) {
-    camera.position.add(right.clone().multiplyScalar(-speed));
-  }
-
-  if (keys["KeyD"]) {
-    camera.position.add(right.clone().multiplyScalar(speed));
-  }
+  if (keys["KeyW"]) camera.position.add(forward.clone().multiplyScalar(speed));
+  if (keys["KeyS"]) camera.position.add(forward.clone().multiplyScalar(-speed));
+  if (keys["KeyA"]) camera.position.add(right.clone().multiplyScalar(-speed));
+  if (keys["KeyD"]) camera.position.add(right.clone().multiplyScalar(speed));
 
   camera.position.add(forward.clone().multiplyScalar(-joyY * speed));
   camera.position.add(right.clone().multiplyScalar(joyX * speed));
@@ -278,15 +208,12 @@ function animate() {
 
 animate();
 
-// Resize
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// PWA Service Worker
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./service-worker.js");
 }
