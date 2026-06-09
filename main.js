@@ -61,7 +61,7 @@ let gun = null;
 const objLoader = new OBJLoader();
 
 objLoader.load(
-  "./model/m4a1_s.obj",
+  "./models/m4a1_s.obj",
   (obj) => {
     gun = obj;
 
