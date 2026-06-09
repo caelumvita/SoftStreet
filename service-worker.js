@@ -6,7 +6,7 @@ const FILES = [
   "./style.css",
   "./main.js",
   "./manifest.json",
-  "./model/m4a1_s.obj",
+  "./models/m4a1_s.obj",
   "./sound/universfield-gunshot-352466.mp3"
 ];
 
