@@ -1,32 +1,54 @@
 import * as THREE from "three";
-import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
-import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 
-/* =======================================================
-   FILE PATHS
-======================================================= */
+import { EXRLoader } from
+  "three/addons/loaders/EXRLoader.js";
 
-const GRASS_TEXTURE_PATH =
-  "./textures/10450_Rectangular_Grass_Patch_v1_Diffuse.jpg";
+import { OBJLoader } from
+  "three/addons/loaders/OBJLoader.js";
 
-const CONCRETE_TEXTURE_PATH =
-  "./textures/concrete_floor_worn_001_diff_1k.jpg";
+import { MTLLoader } from
+  "three/addons/loaders/MTLLoader.js";
 
-const SKYBOX_PATH =
+import { TDSLoader } from
+  "three/addons/loaders/TDSLoader.js";
+
+/* ======================================================
+   FILES
+====================================================== */
+
+const SKYBOX_FILE =
   "./textures/qwantani_dusk_2_puresky_1k.exr";
 
-const BUILDING_PATH =
-  "./models/building_04.obj";
+const HOUSE_FOLDER = "./models/";
+const HOUSE_OBJ_FILE = "Bambo_House.obj";
+const HOUSE_MTL_FILE = "Bambo_House.mtl";
 
-const FOOTSTEPS_PATH =
+const BARRIER_FILE =
+  "./models/barrier.3ds";
+
+const FOOTSTEPS_FILE =
   "./sound/soundreality-footsteps-walking-boots-parquet-1-420135.mp3";
 
-/* =======================================================
+const GRASS_TEXTURES = [
+  "./textures/aerial_grass_rock_diff_1k.jpg",
+  "./textures/aerial_grass_rock_diff_1k.png",
+  "./textures/aerial_grass_rock_diff_1k.jpeg",
+  "./textures/aerial_grass_rock_diff_1k.webp"
+];
+
+const CONCRETE_TEXTURES = [
+  "./textures/concrete_floor_worn_001_diff_1k.jpg",
+  "./textures/concrete_floor_worn_001_diff_1k.png",
+  "./textures/concrete_floor_worn_001_diff_1k.jpeg",
+  "./textures/concrete_floor_worn_001_diff_1k.webp"
+];
+
+/* ======================================================
    WORLD SETTINGS
-======================================================= */
+====================================================== */
 
 const PLAYER_HEIGHT = 2.25;
-const PLAYER_RADIUS = 0.45;
+const PLAYER_RADIUS = 0.48;
 
 const BASE_WIDTH = 72;
 const BASE_LENGTH = 96;
@@ -39,97 +61,127 @@ const MOUSE_SENSITIVITY = 0.002;
 const TOUCH_SENSITIVITY = 0.0045;
 
 /*
-  Положення будинків за макетом:
-
-  Ліва лінія:  x = -22
-  Правa лінія: x = 22
-
-  Три будинки:
-  z = -30, 0, 30
+  Будинки стоять у два ряди.
 */
 
-const LEFT_HOUSE_X = -22;
-const RIGHT_HOUSE_X = 22;
+const LEFT_HOUSE_X = -23;
+const RIGHT_HOUSE_X = 23;
 
-const HOUSE_Z_POSITIONS = [-30, 0, 30];
+const HOUSE_Z_POSITIONS = [
+  -30,
+  0,
+  30
+];
 
 /*
-  Якщо будинки дивляться не в той бік,
-  поміняй місцями ці два значення.
+  Будинки повернуті фасадами
+  до центральної частини карти.
 */
 
-const LEFT_HOUSE_ROTATION = Math.PI / 2;
-const RIGHT_HOUSE_ROTATION = -Math.PI / 2;
+const LEFT_HOUSE_ROTATION =
+  Math.PI / 2;
 
-const SIDEWALK_LEFT_X = -8;
-const SIDEWALK_RIGHT_X = 8;
+const RIGHT_HOUSE_ROTATION =
+  -Math.PI / 2;
 
-/* =======================================================
-   HTML ELEMENTS
-======================================================= */
+/*
+  Два довгі тротуари.
+*/
 
-const loadingScreen = document.getElementById("loadingScreen");
-const loadingText = document.getElementById("loadingText");
+const LEFT_SIDEWALK_X = -8;
+const RIGHT_SIDEWALK_X = 8;
 
-const desktopHint = document.getElementById("desktopHint");
-const mobileHint = document.getElementById("mobileHint");
+const SIDEWALK_WIDTH = 4.3;
 
-const joystick = document.getElementById("joystick");
-const joystickStick = document.getElementById("joystickStick");
-const lookZone = document.getElementById("lookZone");
+/*
+  Паркани стоять на двох кінцях
+  кожного тротуару.
+*/
+
+const BARRIER_Z_POSITIONS = [
+  -44,
+  44
+];
+
+const BARRIER_X_POSITIONS = [
+  LEFT_SIDEWALK_X,
+  RIGHT_SIDEWALK_X
+];
+
+/* ======================================================
+   HTML
+====================================================== */
+
+const loadingScreen =
+  document.getElementById("loadingScreen");
+
+const loadingText =
+  document.getElementById("loadingText");
+
+const desktopHint =
+  document.getElementById("desktopHint");
+
+const mobileHint =
+  document.getElementById("mobileHint");
+
+const joystick =
+  document.getElementById("joystick");
+
+const joystickStick =
+  document.getElementById("joystickStick");
+
+const lookZone =
+  document.getElementById("lookZone");
 
 const isMobile =
   window.matchMedia("(pointer: coarse)").matches ||
   navigator.maxTouchPoints > 0;
 
-/* =======================================================
-   LOADING
-======================================================= */
+function setLoadingText(text) {
+  if (loadingText) {
+    loadingText.textContent = text;
+  }
+}
 
-const loadingManager = new THREE.LoadingManager();
-
-loadingManager.onProgress = (_url, loaded, total) => {
-  const percent = Math.round(
-    (loaded / Math.max(total, 1)) * 100
-  );
-
-  loadingText.textContent =
-    `Завантаження світу: ${percent}%`;
-};
-
-loadingManager.onLoad = () => {
-  loadingText.textContent = "Готово";
+function hideLoadingScreen() {
+  setLoadingText("Готово");
 
   setTimeout(() => {
-    loadingScreen.classList.add("hidden");
+    loadingScreen?.classList.add("hidden");
   }, 350);
 
   setTimeout(() => {
-    desktopHint.style.opacity = "0";
-    mobileHint.style.opacity = "0";
+    if (desktopHint) {
+      desktopHint.style.opacity = "0";
+    }
+
+    if (mobileHint) {
+      mobileHint.style.opacity = "0";
+    }
   }, 6000);
-};
+}
 
-loadingManager.onError = (url) => {
-  console.error("Не вдалося завантажити:", url);
-
-  loadingText.textContent =
-    "Один із файлів не завантажився";
-};
-
-/* =======================================================
+/* ======================================================
    SCENE
-======================================================= */
+====================================================== */
 
 const scene = new THREE.Scene();
 
-scene.background = new THREE.Color(0x7895a8);
-scene.fog = new THREE.Fog(0x7895a8, 70, 185);
+scene.background =
+  new THREE.Color(0x7895a8);
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  powerPreference: "high-performance"
-});
+scene.fog =
+  new THREE.Fog(
+    0x7895a8,
+    75,
+    190
+  );
+
+const renderer =
+  new THREE.WebGLRenderer({
+    antialias: true,
+    powerPreference: "high-performance"
+  });
 
 renderer.setSize(
   window.innerWidth,
@@ -137,61 +189,176 @@ renderer.setSize(
 );
 
 renderer.setPixelRatio(
-  Math.min(window.devicePixelRatio, 1.5)
+  Math.min(
+    window.devicePixelRatio,
+    1.5
+  )
 );
 
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.type =
+  THREE.PCFSoftShadowMap;
+
+renderer.outputColorSpace =
+  THREE.SRGBColorSpace;
 
 renderer.toneMapping =
   THREE.ACESFilmicToneMapping;
 
 renderer.toneMappingExposure = 1.05;
 
-document.body.appendChild(renderer.domElement);
-
-/* =======================================================
-   PLAYER
-======================================================= */
-
-const player = new THREE.Group();
-player.position.set(0, 0, 42);
-scene.add(player);
-
-const pitchPivot = new THREE.Group();
-player.add(pitchPivot);
-
-const camera = new THREE.PerspectiveCamera(
-  72,
-  window.innerWidth / window.innerHeight,
-  0.08,
-  500
+document.body.appendChild(
+  renderer.domElement
 );
 
-camera.position.set(0, PLAYER_HEIGHT, 0);
+/* ======================================================
+   PLAYER
+====================================================== */
+
+const player =
+  new THREE.Group();
+
+player.position.set(
+  0,
+  0,
+  39
+);
+
+scene.add(player);
+
+const pitchPivot =
+  new THREE.Group();
+
+player.add(pitchPivot);
+
+const camera =
+  new THREE.PerspectiveCamera(
+    72,
+    window.innerWidth /
+      window.innerHeight,
+    0.08,
+    500
+  );
+
+camera.position.set(
+  0,
+  PLAYER_HEIGHT,
+  0
+);
+
 pitchPivot.add(camera);
 
 let yaw = 0;
 let pitch = 0;
 
-/* =======================================================
+/* ======================================================
+   STATIC COLLIDERS
+====================================================== */
+
+/*
+  Тут зберігаються світові Box3
+  будинків і парканів.
+*/
+
+const staticColliders = [];
+
+/*
+  Створює collider на основі
+  справжнього розміру моделі.
+*/
+
+function addColliderFromObject(
+  object,
+  padding = 0.18
+) {
+  object.updateMatrixWorld(true);
+
+  const box =
+    new THREE.Box3()
+      .setFromObject(
+        object,
+        true
+      );
+
+  /*
+    Трохи збільшуємо collider,
+    щоб камера не заходила в стіни.
+  */
+
+  box.min.x -= padding;
+  box.min.z -= padding;
+
+  box.max.x += padding;
+  box.max.z += padding;
+
+  staticColliders.push(box);
+}
+
+/*
+  Перевірка circle-player проти Box3.
+*/
+
+function playerCollidesAt(x, z) {
+  for (
+    const box of staticColliders
+  ) {
+    const closestX =
+      THREE.MathUtils.clamp(
+        x,
+        box.min.x,
+        box.max.x
+      );
+
+    const closestZ =
+      THREE.MathUtils.clamp(
+        z,
+        box.min.z,
+        box.max.z
+      );
+
+    const dx =
+      x - closestX;
+
+    const dz =
+      z - closestZ;
+
+    const distanceSquared =
+      dx * dx + dz * dz;
+
+    if (
+      distanceSquared <
+      PLAYER_RADIUS * PLAYER_RADIUS
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/* ======================================================
    SKYBOX
-======================================================= */
+====================================================== */
 
 const pmremGenerator =
-  new THREE.PMREMGenerator(renderer);
+  new THREE.PMREMGenerator(
+    renderer
+  );
 
-pmremGenerator.compileEquirectangularShader();
+pmremGenerator
+  .compileEquirectangularShader();
 
-const exrLoader =
-  new EXRLoader(loadingManager);
+async function loadSkybox() {
+  try {
+    const loader =
+      new EXRLoader();
 
-exrLoader.load(
-  SKYBOX_PATH,
+    const texture =
+      await loader.loadAsync(
+        SKYBOX_FILE
+      );
 
-  (texture) => {
     texture.mapping =
       THREE.EquirectangularReflectionMapping;
 
@@ -199,147 +366,176 @@ exrLoader.load(
 
     const environment =
       pmremGenerator
-        .fromEquirectangular(texture)
+        .fromEquirectangular(
+          texture
+        )
         .texture;
 
-    scene.environment = environment;
+    scene.environment =
+      environment;
 
     pmremGenerator.dispose();
-  },
 
-  undefined,
-
-  (error) => {
+    console.log(
+      "Skybox loaded"
+    );
+  } catch (error) {
     console.error(
-      "Помилка завантаження skybox:",
+      "Skybox error:",
       error
     );
 
     scene.background =
       new THREE.Color(0x7895a8);
   }
-);
+}
 
-/* =======================================================
-   LIGHTING AND SHADOWS
-======================================================= */
+/* ======================================================
+   LIGHTING
+====================================================== */
 
 const hemisphereLight =
   new THREE.HemisphereLight(
-    0xd3eaff,
-    0x343a2d,
-    1.1
+    0xd7ecff,
+    0x343c2e,
+    1.05
   );
 
 scene.add(hemisphereLight);
 
 const sun =
   new THREE.DirectionalLight(
-    0xffd8ad,
-    2.8
+    0xffd6ab,
+    2.9
   );
 
-sun.position.set(-38, 58, 34);
+sun.position.set(
+  -42,
+  62,
+  36
+);
+
 sun.castShadow = true;
 
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(
+  2048,
+  2048
+);
 
 sun.shadow.camera.near = 1;
-sun.shadow.camera.far = 180;
+sun.shadow.camera.far = 190;
 
-sun.shadow.camera.left = -58;
-sun.shadow.camera.right = 58;
-sun.shadow.camera.top = 58;
-sun.shadow.camera.bottom = -58;
+sun.shadow.camera.left = -65;
+sun.shadow.camera.right = 65;
+sun.shadow.camera.top = 65;
+sun.shadow.camera.bottom = -65;
 
 sun.shadow.bias = -0.00015;
 sun.shadow.normalBias = 0.025;
 
+sun.target.position.set(
+  0,
+  0,
+  0
+);
+
 scene.add(sun);
-
-/*
-  Сонце направлене в центр кварталу.
-*/
-
-sun.target.position.set(0, 0, 0);
 scene.add(sun.target);
 
 const ambientLight =
   new THREE.AmbientLight(
-    0x91a7b7,
-    0.18
+    0x8fa6b6,
+    0.17
   );
 
 scene.add(ambientLight);
 
-/* =======================================================
-   TEXTURE LOADER
-======================================================= */
+/* ======================================================
+   TEXTURES
+====================================================== */
 
 const textureLoader =
-  new THREE.TextureLoader(loadingManager);
+  new THREE.TextureLoader();
 
-function prepareTexture(texture, repeatX, repeatY) {
-  texture.colorSpace = THREE.SRGBColorSpace;
+async function loadFirstTexture(
+  fileCandidates
+) {
+  for (
+    const file of fileCandidates
+  ) {
+    try {
+      const texture =
+        await textureLoader.loadAsync(
+          file
+        );
 
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
+      console.log(
+        "Texture loaded:",
+        file
+      );
 
-  texture.repeat.set(repeatX, repeatY);
+      return texture;
+    } catch (error) {
+      console.warn(
+        "Texture not found:",
+        file
+      );
+    }
+  }
+
+  throw new Error(
+    "No texture candidate loaded"
+  );
+}
+
+function prepareRepeatingTexture(
+  texture,
+  repeatX,
+  repeatY
+) {
+  texture.colorSpace =
+    THREE.SRGBColorSpace;
+
+  texture.wrapS =
+    THREE.RepeatWrapping;
+
+  texture.wrapT =
+    THREE.RepeatWrapping;
+
+  texture.repeat.set(
+    repeatX,
+    repeatY
+  );
 
   texture.anisotropy =
-    renderer.capabilities.getMaxAnisotropy();
+    renderer.capabilities
+      .getMaxAnisotropy();
 
   texture.needsUpdate = true;
 
   return texture;
 }
 
-/* =======================================================
-   GRASS BASEPLATE
-======================================================= */
+/* ======================================================
+   BASEPLATE
+====================================================== */
 
 const grassMaterial =
   new THREE.MeshStandardMaterial({
-    color: 0xffffff,
+    color: 0x68875b,
     roughness: 1,
     metalness: 0
   });
 
-textureLoader.load(
-  GRASS_TEXTURE_PATH,
-
-  (texture) => {
-    prepareTexture(texture, 12, 16);
-
-    grassMaterial.map = texture;
-    grassMaterial.color.set(0xffffff);
-    grassMaterial.needsUpdate = true;
-
-    console.log("Grass texture loaded");
-  },
-
-  undefined,
-
-  (error) => {
-    console.error(
-      "Не вдалося завантажити траву:",
-      error
-    );
-
-    grassMaterial.color.set(0x668258);
-  }
-);
-
-const baseplate = new THREE.Mesh(
-  new THREE.BoxGeometry(
-    BASE_WIDTH,
-    1,
-    BASE_LENGTH
-  ),
-
-  grassMaterial
-);
+const baseplate =
+  new THREE.Mesh(
+    new THREE.BoxGeometry(
+      BASE_WIDTH,
+      1,
+      BASE_LENGTH
+    ),
+    grassMaterial
+  );
 
 baseplate.position.y = -0.5;
 
@@ -348,59 +544,61 @@ baseplate.castShadow = false;
 
 scene.add(baseplate);
 
-/* =======================================================
-   SIDEWALK MATERIAL
-======================================================= */
+async function loadGrassTexture() {
+  try {
+    const texture =
+      await loadFirstTexture(
+        GRASS_TEXTURES
+      );
+
+    prepareRepeatingTexture(
+      texture,
+      9,
+      12
+    );
+
+    grassMaterial.map =
+      texture;
+
+    grassMaterial.color.set(
+      0xffffff
+    );
+
+    grassMaterial.needsUpdate =
+      true;
+  } catch (error) {
+    console.error(
+      "Grass texture error:",
+      error
+    );
+
+    grassMaterial.color.set(
+      0x68875b
+    );
+  }
+}
+
+/* ======================================================
+   SIDEWALKS
+====================================================== */
 
 const concreteMaterial =
   new THREE.MeshStandardMaterial({
-    color: 0xc4c4c4,
-    roughness: 0.95,
+    color: 0xb7b7b7,
+    roughness: 0.97,
     metalness: 0
   });
 
-textureLoader.load(
-  CONCRETE_TEXTURE_PATH,
-
-  (texture) => {
-    prepareTexture(texture, 1.5, 22);
-
-    concreteMaterial.map = texture;
-    concreteMaterial.color.set(0xffffff);
-    concreteMaterial.needsUpdate = true;
-
-    console.log("Concrete texture loaded");
-  },
-
-  undefined,
-
-  (error) => {
-    console.error(
-      "Не вдалося завантажити бетон:",
-      error
-    );
-  }
-);
-
-/* =======================================================
-   SIDEWALKS
-======================================================= */
-
 function createSidewalk(x) {
-  const sidewalk = new THREE.Mesh(
-    new THREE.BoxGeometry(
-      4.3,
-      0.18,
-      BASE_LENGTH - 3
-    ),
-
-    concreteMaterial
-  );
-
-  /*
-    Верх baseplate має висоту 0.
-    Тротуар трохи піднятий над землею.
-  */
+  const sidewalk =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        SIDEWALK_WIDTH,
+        0.18,
+        BASE_LENGTH - 5
+      ),
+      concreteMaterial
+    );
 
   sidewalk.position.set(
     x,
@@ -413,159 +611,334 @@ function createSidewalk(x) {
 
   scene.add(sidewalk);
 
+  /*
+    Тротуар не є collider:
+    по ньому можна ходити.
+  */
+
   return sidewalk;
 }
 
-createSidewalk(SIDEWALK_LEFT_X);
-createSidewalk(SIDEWALK_RIGHT_X);
+createSidewalk(
+  LEFT_SIDEWALK_X
+);
 
-/* =======================================================
-   BUILDINGS
-======================================================= */
+createSidewalk(
+  RIGHT_SIDEWALK_X
+);
 
-const buildingMaterial =
+async function loadConcreteTexture() {
+  try {
+    const texture =
+      await loadFirstTexture(
+        CONCRETE_TEXTURES
+      );
+
+    prepareRepeatingTexture(
+      texture,
+      1.4,
+      20
+    );
+
+    concreteMaterial.map =
+      texture;
+
+    concreteMaterial.color.set(
+      0xffffff
+    );
+
+    concreteMaterial.needsUpdate =
+      true;
+  } catch (error) {
+    console.error(
+      "Concrete texture error:",
+      error
+    );
+  }
+}
+
+/* ======================================================
+   MODEL HELPERS
+====================================================== */
+
+function enableModelShadows(
+  object,
+  fallbackMaterial = null
+) {
+  object.traverse((child) => {
+    if (!child.isMesh) {
+      return;
+    }
+
+    if (fallbackMaterial) {
+      child.material =
+        fallbackMaterial;
+    }
+
+    const materials =
+      Array.isArray(
+        child.material
+      )
+        ? child.material
+        : [child.material];
+
+    for (
+      const material of materials
+    ) {
+      if (
+        material?.map
+      ) {
+        material.map.colorSpace =
+          THREE.SRGBColorSpace;
+
+        material.map.needsUpdate =
+          true;
+      }
+
+      if (material) {
+        material.needsUpdate =
+          true;
+      }
+    }
+
+    child.castShadow = true;
+    child.receiveShadow = true;
+  });
+}
+
+/*
+  Центрує модель і ставить
+  її низ на рівень Y = 0.
+*/
+
+function centreAndGroundObject(
+  object
+) {
+  object.updateMatrixWorld(true);
+
+  let box =
+    new THREE.Box3()
+      .setFromObject(
+        object,
+        true
+      );
+
+  const center =
+    new THREE.Vector3();
+
+  box.getCenter(center);
+
+  object.position.x -= center.x;
+  object.position.z -= center.z;
+  object.position.y -= box.min.y;
+
+  object.updateMatrixWorld(true);
+
+  return object;
+}
+
+/*
+  Підганяє горизонтальний
+  розмір моделі.
+*/
+
+function scaleHorizontalSize(
+  object,
+  targetSize
+) {
+  object.updateMatrixWorld(true);
+
+  const box =
+    new THREE.Box3()
+      .setFromObject(
+        object,
+        true
+      );
+
+  const size =
+    new THREE.Vector3();
+
+  box.getSize(size);
+
+  const horizontalSize =
+    Math.max(
+      size.x,
+      size.z
+    );
+
+  if (horizontalSize > 0) {
+    const scale =
+      targetSize /
+      horizontalSize;
+
+    object.scale.multiplyScalar(
+      scale
+    );
+  }
+
+  object.updateMatrixWorld(true);
+
+  return object;
+}
+
+/* ======================================================
+   BAMBO HOUSE
+====================================================== */
+
+const houseFallbackMaterial =
   new THREE.MeshStandardMaterial({
-    color: 0xaaa397,
-    roughness: 0.8,
+    color: 0xa89f90,
+    roughness: 0.82,
     metalness: 0.02
   });
 
-const objLoader =
-  new OBJLoader(loadingManager);
+async function loadHouseObject() {
+  /*
+    Спочатку пробуємо завантажити
+    MTL і справжні текстури.
+  */
 
-objLoader.load(
-  BUILDING_PATH,
+  try {
+    const mtlLoader =
+      new MTLLoader();
 
-  (loadedBuilding) => {
-    loadedBuilding.traverse((child) => {
-      if (!child.isMesh) return;
-
-      child.material = buildingMaterial;
-
-      /*
-        Саме ці дві властивості
-        створюють тіні будинку.
-      */
-
-      child.castShadow = true;
-      child.receiveShadow = true;
-    });
-
-    /*
-      Визначаємо початковий розмір.
-    */
-
-    const originalBox =
-      new THREE.Box3()
-        .setFromObject(loadedBuilding);
-
-    const originalSize =
-      new THREE.Vector3();
-
-    originalBox.getSize(originalSize);
-
-    /*
-      Масштабуємо модель за найбільшою
-      горизонтальною стороною.
-
-      Орієнтовна ширина одного будинку:
-      15 одиниць.
-    */
-
-    const horizontalSize = Math.max(
-      originalSize.x,
-      originalSize.z
+    mtlLoader.setPath(
+      HOUSE_FOLDER
     );
 
-    if (horizontalSize > 0) {
-      const modelScale =
-        15 / horizontalSize;
+    mtlLoader.setResourcePath(
+      HOUSE_FOLDER
+    );
 
-      loadedBuilding.scale.setScalar(
-        modelScale
+    const materials =
+      await mtlLoader.loadAsync(
+        HOUSE_MTL_FILE
       );
-    }
 
-    loadedBuilding.updateMatrixWorld(true);
+    materials.preload();
 
+    const objLoader =
+      new OBJLoader();
+
+    objLoader.setPath(
+      HOUSE_FOLDER
+    );
+
+    objLoader.setMaterials(
+      materials
+    );
+
+    const house =
+      await objLoader.loadAsync(
+        HOUSE_OBJ_FILE
+      );
+
+    enableModelShadows(
+      house
+    );
+
+    console.log(
+      "House OBJ + MTL loaded"
+    );
+
+    return house;
+  } catch (mtlError) {
     /*
-      Після масштабування повторно
-      визначаємо центр і низ будинку.
+      Якщо MTL відсутній,
+      завантажуємо OBJ
+      з нейтральним матеріалом.
     */
 
-    const scaledBox =
-      new THREE.Box3()
-        .setFromObject(loadedBuilding);
+    console.warn(
+      "House MTL was not loaded. Using fallback material.",
+      mtlError
+    );
 
-    const scaledCenter =
-      new THREE.Vector3();
+    const objLoader =
+      new OBJLoader();
 
-    scaledBox.getCenter(scaledCenter);
+    objLoader.setPath(
+      HOUSE_FOLDER
+    );
 
-    /*
-      Створюємо контейнер-шаблон.
-      Сама модель центрується всередині.
-    */
+    const house =
+      await objLoader.loadAsync(
+        HOUSE_OBJ_FILE
+      );
 
-    const buildingTemplate =
+    enableModelShadows(
+      house,
+      houseFallbackMaterial
+    );
+
+    return house;
+  }
+}
+
+async function createHouseLayout() {
+  try {
+    const loadedHouse =
+      await loadHouseObject();
+
+    scaleHorizontalSize(
+      loadedHouse,
+      15
+    );
+
+    centreAndGroundObject(
+      loadedHouse
+    );
+
+    const houseTemplate =
       new THREE.Group();
 
-    loadedBuilding.position.set(
-      -scaledCenter.x,
-      -scaledBox.min.y,
-      -scaledCenter.z
+    houseTemplate.add(
+      loadedHouse
     );
 
-    buildingTemplate.add(
-      loadedBuilding
-    );
-
-    /*
-      Створення копії будинку.
-    */
-
-    function placeBuilding(
+    function placeHouse(
       x,
       z,
       rotationY
     ) {
-      const buildingCopy =
-        buildingTemplate.clone(true);
+      const copy =
+        houseTemplate.clone(true);
 
-      buildingCopy.position.set(
+      copy.position.set(
         x,
         0,
         z
       );
 
-      buildingCopy.rotation.y =
+      copy.rotation.y =
         rotationY;
 
-      scene.add(buildingCopy);
+      scene.add(copy);
+
+      copy.updateMatrixWorld(true);
+
+      /*
+        Кожен будинок отримує
+        окремий collider.
+      */
+
+      addColliderFromObject(
+        copy,
+        0.25
+      );
     }
 
-    /*
-      Три будинки зліва.
-    */
-
     for (
-      const z of HOUSE_Z_POSITIONS
+      const z of
+      HOUSE_Z_POSITIONS
     ) {
-      placeBuilding(
+      placeHouse(
         LEFT_HOUSE_X,
         z,
         LEFT_HOUSE_ROTATION
       );
-    }
 
-    /*
-      Три будинки справа.
-    */
-
-    for (
-      const z of HOUSE_Z_POSITIONS
-    ) {
-      placeBuilding(
+      placeHouse(
         RIGHT_HOUSE_X,
         z,
         RIGHT_HOUSE_ROTATION
@@ -573,46 +946,177 @@ objLoader.load(
     }
 
     console.log(
-      "Six buildings created"
+      "Six houses with collisions created"
     );
-  },
-
-  undefined,
-
-  (error) => {
+  } catch (error) {
     console.error(
-      "Помилка building_04.obj:",
+      "House loading error:",
       error
     );
   }
-);
+}
 
-/* =======================================================
-   FOOTSTEP SOUND
-======================================================= */
+/* ======================================================
+   BARRIERS / MINI FENCES
+====================================================== */
+
+async function createBarriers() {
+  try {
+    const loader =
+      new TDSLoader();
+
+    /*
+      Якщо barrier.3ds використовує
+      текстури, поклади їх у models/.
+    */
+
+    loader.setResourcePath(
+      "./models/"
+    );
+
+    const loadedBarrier =
+      await loader.loadAsync(
+        BARRIER_FILE
+      );
+
+    enableModelShadows(
+      loadedBarrier
+    );
+
+    /*
+      Якщо довга сторона моделі
+      йде по Z, повертаємо її по X.
+    */
+
+    loadedBarrier
+      .updateMatrixWorld(true);
+
+    let barrierBox =
+      new THREE.Box3()
+        .setFromObject(
+          loadedBarrier,
+          true
+        );
+
+    const originalSize =
+      new THREE.Vector3();
+
+    barrierBox.getSize(
+      originalSize
+    );
+
+    if (
+      originalSize.z >
+      originalSize.x
+    ) {
+      loadedBarrier.rotation.y =
+        Math.PI / 2;
+
+      loadedBarrier
+        .updateMatrixWorld(true);
+    }
+
+    /*
+      Ширина паркана приблизно
+      дорівнює ширині тротуару.
+    */
+
+    scaleHorizontalSize(
+      loadedBarrier,
+      4.1
+    );
+
+    centreAndGroundObject(
+      loadedBarrier
+    );
+
+    const barrierTemplate =
+      new THREE.Group();
+
+    barrierTemplate.add(
+      loadedBarrier
+    );
+
+    function placeBarrier(
+      x,
+      z
+    ) {
+      const copy =
+        barrierTemplate.clone(true);
+
+      copy.position.set(
+        x,
+        0.18,
+        z
+      );
+
+      scene.add(copy);
+
+      copy.updateMatrixWorld(true);
+
+      addColliderFromObject(
+        copy,
+        0.12
+      );
+    }
+
+    /*
+      Чотири паркани:
+      верх і низ обох тротуарів.
+    */
+
+    for (
+      const x of
+      BARRIER_X_POSITIONS
+    ) {
+      for (
+        const z of
+        BARRIER_Z_POSITIONS
+      ) {
+        placeBarrier(
+          x,
+          z
+        );
+      }
+    }
+
+    console.log(
+      "Four barriers with collisions created"
+    );
+  } catch (error) {
+    console.error(
+      "Barrier loading error:",
+      error
+    );
+  }
+}
+
+/* ======================================================
+   FOOTSTEPS
+====================================================== */
 
 const footsteps =
-  new Audio(FOOTSTEPS_PATH);
+  new Audio(
+    FOOTSTEPS_FILE
+  );
 
 footsteps.loop = true;
 footsteps.volume = 0.24;
 footsteps.playbackRate = 0.96;
 footsteps.preload = "auto";
 
-let footstepsUnlocked = false;
-
-/*
-  Браузер не дозволяє звук до першого
-  натискання користувача.
-
-  Перший клік або дотик розблоковує звук.
-*/
+let footstepsUnlocked =
+  false;
 
 async function unlockFootsteps() {
-  if (footstepsUnlocked) return;
+  if (
+    footstepsUnlocked
+  ) {
+    return;
+  }
 
   try {
-    const savedVolume =
+    const originalVolume =
       footsteps.volume;
 
     footsteps.volume = 0;
@@ -623,12 +1127,12 @@ async function unlockFootsteps() {
     footsteps.currentTime = 0;
 
     footsteps.volume =
-      savedVolume;
+      originalVolume;
 
     footstepsUnlocked = true;
   } catch (error) {
     console.log(
-      "Sound is waiting for interaction"
+      "Footsteps are waiting for interaction"
     );
   }
 }
@@ -645,75 +1149,92 @@ window.addEventListener(
   { once: true }
 );
 
-function updateFootsteps(speed) {
-  const walking =
-    speed > 0.35;
+function updateFootsteps(
+  actualSpeed
+) {
+  const isWalking =
+    actualSpeed > 0.35;
 
   if (
-    walking &&
+    isWalking &&
     footstepsUnlocked
   ) {
     footsteps.playbackRate =
       0.9 +
-      Math.min(speed / WALK_SPEED, 1) *
-      0.12;
+      Math.min(
+        actualSpeed /
+          WALK_SPEED,
+        1
+      ) * 0.12;
 
-    if (footsteps.paused) {
+    if (
+      footsteps.paused
+    ) {
       footsteps
         .play()
         .catch(() => {});
     }
-  } else {
-    if (!footsteps.paused) {
-      footsteps.pause();
-      footsteps.currentTime = 0;
-    }
+  } else if (
+    !footsteps.paused
+  ) {
+    footsteps.pause();
+    footsteps.currentTime = 0;
   }
 }
 
-/* =======================================================
+/* ======================================================
    KEYBOARD
-======================================================= */
+====================================================== */
 
-const keys = new Set();
+const keys =
+  new Set();
 
 document.addEventListener(
   "keydown",
   (event) => {
-    keys.add(event.code);
+    keys.add(
+      event.code
+    );
   }
 );
 
 document.addEventListener(
   "keyup",
   (event) => {
-    keys.delete(event.code);
+    keys.delete(
+      event.code
+    );
   }
 );
 
-/* =======================================================
+/* ======================================================
    DESKTOP CAMERA
-======================================================= */
+====================================================== */
 
-renderer.domElement.addEventListener(
-  "click",
-  () => {
-    if (isMobile) return;
+renderer.domElement
+  .addEventListener(
+    "click",
+    () => {
+      if (isMobile) {
+        return;
+      }
 
-    if (
-      document.pointerLockElement !==
-      renderer.domElement
-    ) {
-      renderer.domElement
-        .requestPointerLock();
+      if (
+        document.pointerLockElement !==
+        renderer.domElement
+      ) {
+        renderer.domElement
+          .requestPointerLock();
+      }
     }
-  }
-);
+  );
 
 document.addEventListener(
   "mousemove",
   (event) => {
-    if (isMobile) return;
+    if (isMobile) {
+      return;
+    }
 
     if (
       document.pointerLockElement !==
@@ -730,50 +1251,74 @@ document.addEventListener(
       event.movementY *
       MOUSE_SENSITIVITY;
 
-    pitch = THREE.MathUtils.clamp(
-      pitch,
-      -Math.PI * 0.47,
-      Math.PI * 0.47
-    );
+    pitch =
+      THREE.MathUtils.clamp(
+        pitch,
+        -Math.PI * 0.47,
+        Math.PI * 0.47
+      );
   }
 );
 
-/* =======================================================
+/* ======================================================
    MOBILE JOYSTICK
-======================================================= */
+====================================================== */
 
 const joystickInput =
   new THREE.Vector2();
 
-let joystickPointerId = null;
+let joystickPointerId =
+  null;
 
 function updateJoystick(
   clientX,
   clientY
 ) {
+  if (
+    !joystick ||
+    !joystickStick
+  ) {
+    return;
+  }
+
   const rect =
-    joystick.getBoundingClientRect();
+    joystick
+      .getBoundingClientRect();
 
   const centerX =
-    rect.left + rect.width / 2;
+    rect.left +
+    rect.width / 2;
 
   const centerY =
-    rect.top + rect.height / 2;
+    rect.top +
+    rect.height / 2;
 
-  let dx = clientX - centerX;
-  let dy = clientY - centerY;
+  let dx =
+    clientX - centerX;
+
+  let dy =
+    clientY - centerY;
 
   const maxDistance = 38;
-  const distance =
-    Math.hypot(dx, dy);
 
-  if (distance > maxDistance) {
+  const distance =
+    Math.hypot(
+      dx,
+      dy
+    );
+
+  if (
+    distance >
+    maxDistance
+  ) {
     dx =
-      (dx / distance) *
+      dx /
+      distance *
       maxDistance;
 
     dy =
-      (dy / distance) *
+      dy /
+      distance *
       maxDistance;
   }
 
@@ -781,23 +1326,27 @@ function updateJoystick(
     `translate(${dx}px, ${dy}px)`;
 
   joystickInput.x =
-    dx / maxDistance;
+    dx /
+    maxDistance;
 
   joystickInput.y =
-    -dy / maxDistance;
+    -dy /
+    maxDistance;
 
   const deadZone = 0.08;
 
   if (
-    Math.abs(joystickInput.x) <
-    deadZone
+    Math.abs(
+      joystickInput.x
+    ) < deadZone
   ) {
     joystickInput.x = 0;
   }
 
   if (
-    Math.abs(joystickInput.y) <
-    deadZone
+    Math.abs(
+      joystickInput.y
+    ) < deadZone
   ) {
     joystickInput.y = 0;
   }
@@ -806,13 +1355,18 @@ function updateJoystick(
 function resetJoystick() {
   joystickPointerId = null;
 
-  joystickInput.set(0, 0);
+  joystickInput.set(
+    0,
+    0
+  );
 
-  joystickStick.style.transform =
-    "translate(0, 0)";
+  if (joystickStick) {
+    joystickStick.style.transform =
+      "translate(0, 0)";
+  }
 }
 
-joystick.addEventListener(
+joystick?.addEventListener(
   "pointerdown",
   (event) => {
     if (
@@ -837,7 +1391,7 @@ joystick.addEventListener(
   }
 );
 
-joystick.addEventListener(
+joystick?.addEventListener(
   "pointermove",
   (event) => {
     if (
@@ -856,30 +1410,29 @@ joystick.addEventListener(
   }
 );
 
-joystick.addEventListener(
+joystick?.addEventListener(
   "pointerup",
   (event) => {
     if (
-      event.pointerId !==
+      event.pointerId ===
       joystickPointerId
     ) {
-      return;
+      resetJoystick();
     }
-
-    resetJoystick();
   }
 );
 
-joystick.addEventListener(
+joystick?.addEventListener(
   "pointercancel",
   resetJoystick
 );
 
-/* =======================================================
+/* ======================================================
    MOBILE CAMERA
-======================================================= */
+====================================================== */
 
 let lookPointerId = null;
+
 let previousLookX = 0;
 let previousLookY = 0;
 
@@ -887,10 +1440,12 @@ function stopLooking() {
   lookPointerId = null;
 }
 
-lookZone.addEventListener(
+lookZone?.addEventListener(
   "pointerdown",
   (event) => {
-    if (lookPointerId !== null) {
+    if (
+      lookPointerId !== null
+    ) {
       return;
     }
 
@@ -911,7 +1466,7 @@ lookZone.addEventListener(
   }
 );
 
-lookZone.addEventListener(
+lookZone?.addEventListener(
   "pointermove",
   (event) => {
     if (
@@ -938,41 +1493,42 @@ lookZone.addEventListener(
       event.clientY;
 
     yaw -=
-      dx * TOUCH_SENSITIVITY;
+      dx *
+      TOUCH_SENSITIVITY;
 
     pitch -=
-      dy * TOUCH_SENSITIVITY;
+      dy *
+      TOUCH_SENSITIVITY;
 
-    pitch = THREE.MathUtils.clamp(
-      pitch,
-      -Math.PI * 0.47,
-      Math.PI * 0.47
-    );
+    pitch =
+      THREE.MathUtils.clamp(
+        pitch,
+        -Math.PI * 0.47,
+        Math.PI * 0.47
+      );
   }
 );
 
-lookZone.addEventListener(
+lookZone?.addEventListener(
   "pointerup",
   (event) => {
     if (
-      event.pointerId !==
+      event.pointerId ===
       lookPointerId
     ) {
-      return;
+      stopLooking();
     }
-
-    stopLooking();
   }
 );
 
-lookZone.addEventListener(
+lookZone?.addEventListener(
   "pointercancel",
   stopLooking
 );
 
-/* =======================================================
+/* ======================================================
    MOVEMENT
-======================================================= */
+====================================================== */
 
 const velocity =
   new THREE.Vector3();
@@ -988,6 +1544,8 @@ const right =
 
 const movementDirection =
   new THREE.Vector3();
+
+let currentMovementSpeed = 0;
 
 function getMovementInput() {
   let inputX =
@@ -1025,7 +1583,10 @@ function getMovementInput() {
   }
 
   const length =
-    Math.hypot(inputX, inputY);
+    Math.hypot(
+      inputX,
+      inputY
+    );
 
   if (length > 1) {
     inputX /= length;
@@ -1038,7 +1599,68 @@ function getMovementInput() {
   };
 }
 
-function updateMovement(deltaTime) {
+/*
+  Рух окремо по X і Z забезпечує
+  стабільне ковзання вздовж стін.
+*/
+
+function movePlayerWithCollision(
+  movement
+) {
+  const limitX =
+    BASE_WIDTH / 2 -
+    PLAYER_RADIUS;
+
+  const limitZ =
+    BASE_LENGTH / 2 -
+    PLAYER_RADIUS;
+
+  const nextX =
+    THREE.MathUtils.clamp(
+      player.position.x +
+        movement.x,
+      -limitX,
+      limitX
+    );
+
+  if (
+    !playerCollidesAt(
+      nextX,
+      player.position.z
+    )
+  ) {
+    player.position.x =
+      nextX;
+  } else {
+    velocity.x = 0;
+  }
+
+  const nextZ =
+    THREE.MathUtils.clamp(
+      player.position.z +
+        movement.z,
+      -limitZ,
+      limitZ
+    );
+
+  if (
+    !playerCollidesAt(
+      player.position.x,
+      nextZ
+    )
+  ) {
+    player.position.z =
+      nextZ;
+  } else {
+    velocity.z = 0;
+  }
+
+  player.position.y = 0;
+}
+
+function updateMovement(
+  deltaTime
+) {
   const {
     inputX,
     inputY
@@ -1082,8 +1704,12 @@ function updateMovement(deltaTime) {
   }
 
   targetVelocity
-    .copy(movementDirection)
-    .multiplyScalar(WALK_SPEED);
+    .copy(
+      movementDirection
+    )
+    .multiplyScalar(
+      WALK_SPEED
+    );
 
   const hasInput =
     movementDirection.lengthSq() >
@@ -1097,7 +1723,8 @@ function updateMovement(deltaTime) {
   const blend =
     1 -
     Math.exp(
-      -smoothing * deltaTime
+      -smoothing *
+      deltaTime
     );
 
   velocity.lerp(
@@ -1105,98 +1732,84 @@ function updateMovement(deltaTime) {
     blend
   );
 
-  player.position
-    .addScaledVector(
-      velocity,
-      deltaTime
+  const previousPosition =
+    player.position.clone();
+
+  const movement =
+    velocity
+      .clone()
+      .multiplyScalar(
+        deltaTime
+      );
+
+  movePlayerWithCollision(
+    movement
+  );
+
+  const movedDistance =
+    player.position.distanceTo(
+      previousPosition
     );
 
-  /*
-    Стабільна колізія з краями baseplate.
-  */
-
-  const limitX =
-    BASE_WIDTH / 2 -
-    PLAYER_RADIUS;
-
-  const limitZ =
-    BASE_LENGTH / 2 -
-    PLAYER_RADIUS;
-
-  player.position.x =
-    THREE.MathUtils.clamp(
-      player.position.x,
-      -limitX,
-      limitX
-    );
-
-  player.position.z =
-    THREE.MathUtils.clamp(
-      player.position.z,
-      -limitZ,
-      limitZ
-    );
-
-  player.position.y = 0;
-
-  const horizontalSpeed =
-    Math.hypot(
-      velocity.x,
-      velocity.z
-    );
+  currentMovementSpeed =
+    deltaTime > 0
+      ? movedDistance /
+        deltaTime
+      : 0;
 
   updateFootsteps(
-    horizontalSpeed
+    currentMovementSpeed
   );
 }
 
-/* =======================================================
+/* ======================================================
    WALKING BOB
-======================================================= */
+====================================================== */
 
 let walkingTime = 0;
 
-function updateWalkingBob(deltaTime) {
-  const horizontalSpeed =
-    Math.hypot(
-      velocity.x,
-      velocity.z
-    );
-
+function updateWalkingBob(
+  deltaTime
+) {
   const walkingAmount =
     THREE.MathUtils.clamp(
-      horizontalSpeed /
-      WALK_SPEED,
+      currentMovementSpeed /
+        WALK_SPEED,
       0,
       1
     );
 
   walkingTime +=
     deltaTime *
-    horizontalSpeed *
+    currentMovementSpeed *
     2.15;
 
   const targetBobY =
-    Math.sin(walkingTime * 2) *
+    Math.sin(
+      walkingTime * 2
+    ) *
     0.025 *
     walkingAmount;
 
   const targetBobX =
-    Math.cos(walkingTime) *
+    Math.cos(
+      walkingTime
+    ) *
     0.014 *
     walkingAmount;
 
   const blend =
     1 -
     Math.exp(
-      -12 * deltaTime
+      -12 *
+      deltaTime
     );
 
   camera.position.y =
     THREE.MathUtils.lerp(
       camera.position.y,
       PLAYER_HEIGHT +
-      targetBobY,
+        targetBobY,
       blend
     );
 
@@ -1208,14 +1821,53 @@ function updateWalkingBob(deltaTime) {
     );
 }
 
-/* =======================================================
-   GAME LOOP
-======================================================= */
+/* ======================================================
+   ASSET INITIALIZATION
+====================================================== */
 
-const clock = new THREE.Clock();
+async function loadWorldAssets() {
+  setLoadingText(
+    "Завантаження світу..."
+  );
+
+  const results =
+    await Promise.allSettled([
+      loadSkybox(),
+      loadGrassTexture(),
+      loadConcreteTexture(),
+      createHouseLayout(),
+      createBarriers()
+    ]);
+
+  for (
+    const result of results
+  ) {
+    if (
+      result.status ===
+      "rejected"
+    ) {
+      console.error(
+        result.reason
+      );
+    }
+  }
+
+  hideLoadingScreen();
+}
+
+loadWorldAssets();
+
+/* ======================================================
+   GAME LOOP
+====================================================== */
+
+const clock =
+  new THREE.Clock();
 
 function animate() {
-  requestAnimationFrame(animate);
+  requestAnimationFrame(
+    animate
+  );
 
   const deltaTime =
     Math.min(
@@ -1223,11 +1875,19 @@ function animate() {
       0.033
     );
 
-  player.rotation.y = yaw;
-  pitchPivot.rotation.x = pitch;
+  player.rotation.y =
+    yaw;
 
-  updateMovement(deltaTime);
-  updateWalkingBob(deltaTime);
+  pitchPivot.rotation.x =
+    pitch;
+
+  updateMovement(
+    deltaTime
+  );
+
+  updateWalkingBob(
+    deltaTime
+  );
 
   renderer.render(
     scene,
@@ -1237,9 +1897,9 @@ function animate() {
 
 animate();
 
-/* =======================================================
-   WINDOW RESIZE
-======================================================= */
+/* ======================================================
+   RESIZE
+====================================================== */
 
 window.addEventListener(
   "resize",
@@ -1248,7 +1908,8 @@ window.addEventListener(
       window.innerWidth /
       window.innerHeight;
 
-    camera.updateProjectionMatrix();
+    camera
+      .updateProjectionMatrix();
 
     renderer.setSize(
       window.innerWidth,
@@ -1257,24 +1918,30 @@ window.addEventListener(
   }
 );
 
-/* =======================================================
+/* ======================================================
    SERVICE WORKER
-======================================================= */
+====================================================== */
 
-if ("serviceWorker" in navigator) {
+if (
+  "serviceWorker" in
+  navigator
+) {
   window.addEventListener(
     "load",
     () => {
-      navigator.serviceWorker
+      navigator
+        .serviceWorker
         .register(
           "./service-worker.js"
         )
-        .catch((error) => {
-          console.error(
-            "Service worker error:",
-            error
-          );
-        });
+        .catch(
+          (error) => {
+            console.error(
+              "Service worker error:",
+              error
+            );
+          }
+        );
     }
   );
 }
