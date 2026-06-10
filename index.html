@@ -2,8 +2,13 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>DAWNLINE</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <title>DAWNLINE Walking Test</title>
 
   <link rel="stylesheet" href="./style.css">
   <link rel="manifest" href="./manifest.json">
@@ -17,16 +22,27 @@
   }
   </script>
 </head>
+
 <body>
-  <div id="crosshair">+</div>
+  <div id="loadingScreen">
+    <div class="loadingTitle">DAWNLINE</div>
+    <div id="loadingText">Завантаження світу...</div>
+  </div>
+
+  <div id="desktopHint">
+    Натисни на гру · WASD — ходити · мишка — камера
+  </div>
+
+  <div id="mobileHint">
+    Лівий джойстик — рух · проведи справа — камера
+  </div>
 
   <div id="mobileControls">
-    <div id="joystick">
-      <div id="stick"></div>
-    </div>
+    <div id="lookZone"></div>
 
-    <button id="fireButton">FIRE</button>
-    <div id="lookArea"></div>
+    <div id="joystick">
+      <div id="joystickStick"></div>
+    </div>
   </div>
 
   <script type="module" src="./main.js"></script>
