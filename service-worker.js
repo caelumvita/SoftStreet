@@ -1,8 +1,11 @@
+const CACHE_VERSION =
+  "softstreer-v5";
 
-const CACHE_VERSION = "softstreer-v3";
+const CORE_CACHE =
+  `${CACHE_VERSION}-core`;
 
-const CORE_CACHE = `${CACHE_VERSION}-core`;
-const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+const ASSET_CACHE =
+  `${CACHE_VERSION}-assets`;
 
 const CORE_FILES = [
   "./",
@@ -12,99 +15,114 @@ const CORE_FILES = [
   "./manifest.json"
 ];
 
-/* =====================================================
-   INSTALL
+/* INSTALL */
 
-   Кешуємо тільки основні файли.
-   Відсутня модель або текстура більше
-   не зможе зламати встановлення PWA.
-===================================================== */
+self.addEventListener(
+  "install",
+  (event) => {
+    self.skipWaiting();
 
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
-
-  event.waitUntil(
-    caches.open(CORE_CACHE).then(async (cache) => {
-      const results = await Promise.allSettled(
-        CORE_FILES.map(async (file) => {
-          try {
-            await cache.add(file);
-          } catch (error) {
-            console.warn(
-              "Не вдалося додати основний файл у кеш:",
-              file,
-              error
-            );
-          }
+    event.waitUntil(
+      caches
+        .open(CORE_CACHE)
+        .then(async (cache) => {
+          await Promise.allSettled(
+            CORE_FILES.map(
+              async (file) => {
+                try {
+                  await cache.add(file);
+                } catch (error) {
+                  console.warn(
+                    "Core cache error:",
+                    file,
+                    error
+                  );
+                }
+              }
+            )
+          );
         })
-      );
+    );
+  }
+);
 
-      return results;
-    })
-  );
-});
+/* ACTIVATE */
 
-/* =====================================================
-   ACTIVATE
+self.addEventListener(
+  "activate",
+  (event) => {
+    event.waitUntil(
+      caches
+        .keys()
+        .then((cacheNames) => {
+          return Promise.all(
+            cacheNames.map(
+              (cacheName) => {
+                const isSoftStreer =
+                  cacheName.startsWith(
+                    "softstreer-"
+                  );
 
-   Видаляємо старі версії кешу.
-===================================================== */
+                const isCurrent =
+                  cacheName ===
+                    CORE_CACHE ||
+                  cacheName ===
+                    ASSET_CACHE;
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          const belongsToSoftStreer =
-            cacheName.startsWith("softstreer-");
+                if (
+                  isSoftStreer &&
+                  !isCurrent
+                ) {
+                  return caches.delete(
+                    cacheName
+                  );
+                }
 
-          const isCurrentCache =
-            cacheName === CORE_CACHE ||
-            cacheName === RUNTIME_CACHE;
-
-          if (belongsToSoftStreer && !isCurrentCache) {
-            return caches.delete(cacheName);
-          }
-
-          return Promise.resolve();
+                return Promise.resolve();
+              }
+            )
+          );
         })
-      );
-    })
-  );
+    );
 
-  self.clients.claim();
-});
+    self.clients.claim();
+  }
+);
 
-/* =====================================================
-   HELPERS
-===================================================== */
+/* HELPERS */
 
-function isCodeFile(url) {
-  const pathname = url.pathname.toLowerCase();
+function isCodeRequest(url) {
+  const path =
+    url.pathname.toLowerCase();
 
   return (
-    pathname.endsWith(".html") ||
-    pathname.endsWith(".js") ||
-    pathname.endsWith(".css") ||
-    pathname.endsWith(".json")
+    path.endsWith(".html") ||
+    path.endsWith(".css") ||
+    path.endsWith(".js") ||
+    path.endsWith(".json")
   );
 }
 
-async function saveResponse(cacheName, request, response) {
-  if (!response) {
-    return;
-  }
-
-  const canCache =
-    response.ok ||
-    response.type === "opaque";
-
-  if (!canCache) {
+async function storeResponse(
+  cacheName,
+  request,
+  response
+) {
+  if (
+    !response ||
+    !(
+      response.ok ||
+      response.type === "opaque"
+    )
+  ) {
     return;
   }
 
   try {
-    const cache = await caches.open(cacheName);
+    const cache =
+      await caches.open(
+        cacheName
+      );
 
     await cache.put(
       request,
@@ -112,162 +130,124 @@ async function saveResponse(cacheName, request, response) {
     );
   } catch (error) {
     console.warn(
-      "Не вдалося зберегти файл у кеш:",
+      "Cache write error:",
       request.url,
       error
     );
   }
 }
 
-/* =====================================================
-   NAVIGATION
+/* NETWORK FIRST */
 
-   Для відкриття сторінки:
-   1. пробуємо інтернет;
-   2. якщо інтернету немає — відкриваємо index.html.
-===================================================== */
-
-async function handleNavigation(request) {
+async function networkFirst(
+  request
+) {
   try {
-    const networkResponse = await fetch(request);
+    const response =
+      await fetch(request);
 
-    await saveResponse(
+    await storeResponse(
       CORE_CACHE,
       request,
-      networkResponse
+      response
     );
 
-    return networkResponse;
+    return response;
   } catch (error) {
-    const cachedPage =
-      await caches.match("./index.html") ||
-      await caches.match("./");
-
-    if (cachedPage) {
-      return cachedPage;
-    }
-
-    return new Response(
-      "SoftStreer зараз недоступна офлайн.",
-      {
-        status: 503,
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8"
+    const cached =
+      await caches.match(
+        request,
+        {
+          ignoreSearch: true
         }
-      }
-    );
-  }
-}
+      );
 
-/* =====================================================
-   CODE FILES — NETWORK FIRST
-
-   HTML, JS та CSS спочатку беремо з GitHub,
-   щоб після commit не залишався старий код.
-===================================================== */
-
-async function handleCodeFile(request) {
-  try {
-    const networkResponse = await fetch(request);
-
-    await saveResponse(
-      CORE_CACHE,
-      request,
-      networkResponse
-    );
-
-    return networkResponse;
-  } catch (error) {
-    const cachedResponse =
-      await caches.match(request, {
-        ignoreSearch: true
-      });
-
-    if (cachedResponse) {
-      return cachedResponse;
+    if (cached) {
+      return cached;
     }
 
     throw error;
   }
 }
 
-/* =====================================================
-   ASSETS — CACHE FIRST
+/* CACHE FIRST */
 
-   Моделі, текстури, звуки, EXR та бібліотеки:
-   1. використовуємо кеш;
-   2. якщо файла немає — завантажуємо;
-   3. після успіху автоматично кешуємо.
-===================================================== */
-
-async function handleAsset(request) {
-  const cachedResponse =
-    await caches.match(request, {
-      ignoreSearch: true
-    });
-
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-
-  try {
-    const networkResponse = await fetch(request);
-
-    await saveResponse(
-      RUNTIME_CACHE,
+async function cacheFirst(
+  request
+) {
+  const cached =
+    await caches.match(
       request,
-      networkResponse
+      {
+        ignoreSearch: true
+      }
     );
 
-    return networkResponse;
-  } catch (error) {
-    console.error(
-      "Не вдалося завантажити ресурс:",
-      request.url,
-      error
-    );
-
-    return new Response("", {
-      status: 504,
-      statusText: "Resource unavailable"
-    });
+  if (cached) {
+    return cached;
   }
+
+  const response =
+    await fetch(request);
+
+  await storeResponse(
+    ASSET_CACHE,
+    request,
+    response
+  );
+
+  return response;
 }
 
-/* =====================================================
-   FETCH
-===================================================== */
+/* FETCH */
 
-self.addEventListener("fetch", (event) => {
-  const request = event.request;
+self.addEventListener(
+  "fetch",
+  (event) => {
+    const request =
+      event.request;
 
-  if (request.method !== "GET") {
-    return;
-  }
+    if (
+      request.method !== "GET"
+    ) {
+      return;
+    }
 
-  const url = new URL(request.url);
+    const url =
+      new URL(request.url);
 
-  if (request.mode === "navigate") {
+    if (
+      request.mode ===
+      "navigate"
+    ) {
+      event.respondWith(
+        networkFirst(request)
+          .catch(async () => {
+            return (
+              await caches.match(
+                "./index.html"
+              )
+            );
+          })
+      );
+
+      return;
+    }
+
+    if (
+      url.origin ===
+        self.location.origin &&
+      isCodeRequest(url)
+    ) {
+      event.respondWith(
+        networkFirst(request)
+      );
+
+      return;
+    }
+
     event.respondWith(
-      handleNavigation(request)
+      cacheFirst(request)
     );
-
-    return;
   }
-
-  if (
-    url.origin === self.location.origin &&
-    isCodeFile(url)
-  ) {
-    event.respondWith(
-      handleCodeFile(request)
-    );
-
-    return;
-  }
-
-  event.respondWith(
-    handleAsset(request)
-  );
-});
-
+);
