@@ -1,4 +1,4 @@
-const CACHE_NAME = "dawnline-cache-v100";
+const CACHE_NAME = "dawnline-cache-v101";
 
 const FILES = [
   "./",
