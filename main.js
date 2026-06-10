@@ -2065,37 +2065,53 @@ function updateWalkBob(
    LOAD WORLD
 ===================================================== */
 
-async function loadWorld() {
-  setLoadingText(
-    "Завантаження SoftStreer..."
-  );
+function waitWithTimeout(promise, name, timeoutMs = 12000) {
+  return Promise.race([
+    promise,
 
-  const results =
-    await Promise.allSettled([
-      loadSkybox(),
-      loadGrass(),
-      loadConcrete(),
-      createHouses(),
-      loadBottle()
+    new Promise((resolve) => {
+      setTimeout(() => {
+        console.warn(`${name} loading timeout`);
+        resolve(null);
+      }, timeoutMs);
+    })
+  ]);
+}
+
+async function loadWorld() {
+  setLoadingText("Завантаження SoftStreer...");
+
+  try {
+    const results = await Promise.allSettled([
+      waitWithTimeout(loadSkybox(), "Skybox"),
+      waitWithTimeout(loadGrass(), "Grass"),
+      waitWithTimeout(loadConcrete(), "Concrete"),
+      waitWithTimeout(createHouses(), "Houses"),
+      waitWithTimeout(loadBottle(), "Bottle")
     ]);
 
-  for (
-    const result of results
-  ) {
-    if (
-      result.status ===
-      "rejected"
-    ) {
-      console.error(
-        result.reason
-      );
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("Asset error:", result.reason);
+      }
     }
+  } catch (error) {
+    console.error("World loading error:", error);
+  } finally {
+    hideLoadingScreen();
   }
-
-  hideLoadingScreen();
 }
 
 loadWorld();
+
+/*
+  Аварійний захист:
+  навіть якщо якийсь loader повністю зависне,
+  екран завантаження закриється через 14 секунд.
+*/
+setTimeout(() => {
+  loadingScreen?.classList.add("hidden");
+}, 14000);
 
 /* =====================================================
    LOOP
