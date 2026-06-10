@@ -1,9 +1,10 @@
 {
-  "name": "DAWNLINE",
-  "short_name": "DAWNLINE",
+  "name": "SoftStreer🍻",
+  "short_name": "SoftStreer",
   "start_url": "./index.html",
   "display": "fullscreen",
-  "background_color": "#000000",
-  "theme_color": "#000000",
-  "orientation": "landscape"
+  "background_color": "#101820",
+  "theme_color": "#101820",
+  "orientation": "landscape",
+  "description": "A small first-person neighbourhood walking game."
 }
