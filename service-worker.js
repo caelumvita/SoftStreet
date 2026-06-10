@@ -1,26 +1,36 @@
-const CACHE_NAME = "dawnline-cache-v101";
+const CACHE_NAME = "dawnline-walking-v1";
 
-const FILES = [
+const LOCAL_FILES = [
   "./",
   "./index.html",
   "./style.css",
   "./main.js",
   "./manifest.json",
-  "./models/m4a1_s.obj",
-  "./sound/universfield-gunshot-352466.mp3"
+  "./textures/grass.jpg",
+  "./textures/qwantani_dusk_2_puresky_1k.exr",
+  "./models/building_04.obj"
 ];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES)));
+
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.allSettled(
+        LOCAL_FILES.map((file) => cache.add(file))
+      );
+    })
+  );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) return caches.delete(key);
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
         })
       );
     })
@@ -30,7 +40,32 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") {
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    caches.match(event.request).then(async (cached) => {
+      if (cached) {
+        return cached;
+      }
+
+      try {
+        const response = await fetch(event.request);
+
+        if (
+          response &&
+          (response.ok || response.type === "opaque")
+        ) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, response.clone());
+        }
+
+        return response;
+      } catch (error) {
+        console.error("Offline fetch failed:", error);
+        throw error;
+      }
+    })
   );
 });
