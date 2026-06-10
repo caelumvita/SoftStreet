@@ -1,71 +1,90 @@
+### `main.js`
+
+```js
 import * as THREE from "three";
 
-import { EXRLoader } from
-  "three/addons/loaders/EXRLoader.js";
+import {
+  EXRLoader
+} from "three/addons/loaders/EXRLoader.js";
 
-import { OBJLoader } from
-  "three/addons/loaders/OBJLoader.js";
+import {
+  OBJLoader
+} from "three/addons/loaders/OBJLoader.js";
 
-import { MTLLoader } from
-  "three/addons/loaders/MTLLoader.js";
+import {
+  MTLLoader
+} from "three/addons/loaders/MTLLoader.js";
 
-import { TDSLoader } from
-  "three/addons/loaders/TDSLoader.js";
-
-/* ======================================================
+/* =====================================================
    FILES
-====================================================== */
+===================================================== */
 
 const SKYBOX_FILE =
   "./textures/qwantani_dusk_2_puresky_1k.exr";
 
-const HOUSE_FOLDER = "./models/";
-const HOUSE_OBJ_FILE = "Bambo_House.obj";
-const HOUSE_MTL_FILE = "Bambo_House.mtl";
+const HOUSE_FOLDER =
+  "./models/";
 
-const BARRIER_FILE =
-  "./models/barrier.3ds";
+const HOUSE_OBJ_FILE =
+  "Bambo_House.obj";
+
+const HOUSE_MTL_FILE =
+  "Bambo_House.mtl";
+
+const BOTTLE_MODEL_FILE =
+  "./models/Corona.obj";
+
+const BOTTLE_TEXTURE_FILE =
+  "./textures/BotellaText.jpg";
 
 const FOOTSTEPS_FILE =
   "./sound/soundreality-footsteps-walking-boots-parquet-1-420135.mp3";
 
-const GRASS_TEXTURES = [
+const DRINK_SOUND_FILE =
+  "./sound/nahtt-drink-323882.mp3";
+
+/*
+  Код перевірить різні розширення,
+  якщо текстура збережена не як JPG.
+*/
+
+const GRASS_FILES = [
   "./textures/aerial_grass_rock_diff_1k.jpg",
   "./textures/aerial_grass_rock_diff_1k.png",
   "./textures/aerial_grass_rock_diff_1k.jpeg",
   "./textures/aerial_grass_rock_diff_1k.webp"
 ];
 
-const CONCRETE_TEXTURES = [
+const CONCRETE_FILES = [
   "./textures/concrete_floor_worn_001_diff_1k.jpg",
   "./textures/concrete_floor_worn_001_diff_1k.png",
   "./textures/concrete_floor_worn_001_diff_1k.jpeg",
   "./textures/concrete_floor_worn_001_diff_1k.webp"
 ];
 
-/* ======================================================
-   WORLD SETTINGS
-====================================================== */
+/* =====================================================
+   SETTINGS
+===================================================== */
 
-const PLAYER_HEIGHT = 2.25;
+const PLAYER_HEIGHT = 2.3;
 const PLAYER_RADIUS = 0.48;
 
 const BASE_WIDTH = 72;
 const BASE_LENGTH = 96;
 
-const WALK_SPEED = 5.2;
-const ACCELERATION = 11;
-const DECELERATION = 14;
+const WALK_SPEED = 5.25;
+const ACCELERATION = 12;
+const DECELERATION = 15;
 
 const MOUSE_SENSITIVITY = 0.002;
-const TOUCH_SENSITIVITY = 0.0045;
+const TOUCH_SENSITIVITY = 0.0043;
 
 /*
-  Будинки стоять у два ряди.
+  Розташування будинків.
 */
 
-const LEFT_HOUSE_X = -23;
-const RIGHT_HOUSE_X = 23;
+const HOUSE_LEFT_X = -23;
+const HOUSE_RIGHT_X = 23;
 
 const HOUSE_Z_POSITIONS = [
   -30,
@@ -73,68 +92,108 @@ const HOUSE_Z_POSITIONS = [
   30
 ];
 
-/*
-  Будинки повернуті фасадами
-  до центральної частини карти.
-*/
-
-const LEFT_HOUSE_ROTATION =
+const HOUSE_LEFT_ROTATION =
   Math.PI / 2;
 
-const RIGHT_HOUSE_ROTATION =
+const HOUSE_RIGHT_ROTATION =
   -Math.PI / 2;
 
 /*
-  Два довгі тротуари.
+  Тротуари.
 */
 
-const LEFT_SIDEWALK_X = -8;
-const RIGHT_SIDEWALK_X = 8;
+const SIDEWALK_LEFT_X = -8;
+const SIDEWALK_RIGHT_X = 8;
 
 const SIDEWALK_WIDTH = 4.3;
 
 /*
-  Паркани стоять на двох кінцях
-  кожного тротуару.
+  Положення пляшки.
+
+  Якщо пляшка дивиться не в той бік,
+  можна змінювати ці три rotation.
 */
 
-const BARRIER_Z_POSITIONS = [
-  -44,
-  44
-];
+const BOTTLE_BASE_POSITION =
+  new THREE.Vector3(
+    0.43,
+    -0.52,
+    -0.82
+  );
 
-const BARRIER_X_POSITIONS = [
-  LEFT_SIDEWALK_X,
-  RIGHT_SIDEWALK_X
-];
+const BOTTLE_BASE_ROTATION =
+  new THREE.Euler(
+    0.15,
+    0.18,
+    -0.15,
+    "XYZ"
+  );
 
-/* ======================================================
+const BOTTLE_DRINK_POSITION =
+  new THREE.Vector3(
+    0.08,
+    -0.07,
+    -0.34
+  );
+
+const BOTTLE_DRINK_ROTATION =
+  new THREE.Euler(
+    1.22,
+    0.18,
+    0.08,
+    "XYZ"
+  );
+
+const DRINK_DURATION = 4;
+
+/* =====================================================
    HTML
-====================================================== */
+===================================================== */
 
 const loadingScreen =
-  document.getElementById("loadingScreen");
+  document.getElementById(
+    "loadingScreen"
+  );
 
 const loadingText =
-  document.getElementById("loadingText");
+  document.getElementById(
+    "loadingText"
+  );
 
 const desktopHint =
-  document.getElementById("desktopHint");
+  document.getElementById(
+    "desktopHint"
+  );
 
 const mobileHint =
-  document.getElementById("mobileHint");
+  document.getElementById(
+    "mobileHint"
+  );
 
 const joystick =
-  document.getElementById("joystick");
+  document.getElementById(
+    "joystick"
+  );
 
 const joystickStick =
-  document.getElementById("joystickStick");
+  document.getElementById(
+    "joystickStick"
+  );
 
 const lookZone =
-  document.getElementById("lookZone");
+  document.getElementById(
+    "lookZone"
+  );
+
+const drinkButton =
+  document.getElementById(
+    "drinkButton"
+  );
 
 const isMobile =
-  window.matchMedia("(pointer: coarse)").matches ||
+  window.matchMedia(
+    "(pointer: coarse)"
+  ).matches ||
   navigator.maxTouchPoints > 0;
 
 function setLoadingText(text) {
@@ -144,10 +203,12 @@ function setLoadingText(text) {
 }
 
 function hideLoadingScreen() {
-  setLoadingText("Готово");
+  setLoadingText("Готово!");
 
   setTimeout(() => {
-    loadingScreen?.classList.add("hidden");
+    loadingScreen?.classList.add(
+      "hidden"
+    );
   }, 350);
 
   setTimeout(() => {
@@ -158,14 +219,15 @@ function hideLoadingScreen() {
     if (mobileHint) {
       mobileHint.style.opacity = "0";
     }
-  }, 6000);
+  }, 6500);
 }
 
-/* ======================================================
+/* =====================================================
    SCENE
-====================================================== */
+===================================================== */
 
-const scene = new THREE.Scene();
+const scene =
+  new THREE.Scene();
 
 scene.background =
   new THREE.Color(0x7895a8);
@@ -174,7 +236,7 @@ scene.fog =
   new THREE.Fog(
     0x7895a8,
     75,
-    190
+    195
   );
 
 const renderer =
@@ -212,9 +274,14 @@ document.body.appendChild(
   renderer.domElement
 );
 
-/* ======================================================
-   PLAYER
-====================================================== */
+/* =====================================================
+   PLAYER AND CAMERA
+
+   Висота знаходиться на eyePivot.
+   Камера має позицію 0,0,0.
+   Тому погляд униз більше не опускає
+   голову на землю.
+===================================================== */
 
 const player =
   new THREE.Group();
@@ -222,55 +289,51 @@ const player =
 player.position.set(
   0,
   0,
-  39
+  40
 );
 
 scene.add(player);
 
-const pitchPivot =
+const eyePivot =
   new THREE.Group();
 
-player.add(pitchPivot);
+eyePivot.position.set(
+  0,
+  PLAYER_HEIGHT,
+  0
+);
+
+player.add(eyePivot);
 
 const camera =
   new THREE.PerspectiveCamera(
     72,
     window.innerWidth /
       window.innerHeight,
-    0.08,
+    0.06,
     500
   );
 
 camera.position.set(
   0,
-  PLAYER_HEIGHT,
+  0,
   0
 );
 
-pitchPivot.add(camera);
+eyePivot.add(camera);
 
 let yaw = 0;
 let pitch = 0;
 
-/* ======================================================
+/* =====================================================
    STATIC COLLIDERS
-====================================================== */
-
-/*
-  Тут зберігаються світові Box3
-  будинків і парканів.
-*/
+===================================================== */
 
 const staticColliders = [];
 
-/*
-  Створює collider на основі
-  справжнього розміру моделі.
-*/
-
-function addColliderFromObject(
+function addHouseCollider(
   object,
-  padding = 0.18
+  padding = 0.15
 ) {
   object.updateMatrixWorld(true);
 
@@ -282,22 +345,37 @@ function addColliderFromObject(
       );
 
   /*
-    Трохи збільшуємо collider,
-    щоб камера не заходила в стіни.
+    Трохи зменшуємо колізію,
+    щоб дах не блокував гравця
+    далеко від справжньої стіни.
   */
 
-  box.min.x -= padding;
-  box.min.z -= padding;
+  const shrink = 0.3;
 
+  if (
+    box.max.x - box.min.x >
+    shrink * 2
+  ) {
+    box.min.x += shrink;
+    box.max.x -= shrink;
+  }
+
+  if (
+    box.max.z - box.min.z >
+    shrink * 2
+  ) {
+    box.min.z += shrink;
+    box.max.z -= shrink;
+  }
+
+  box.min.x -= padding;
   box.max.x += padding;
+
+  box.min.z -= padding;
   box.max.z += padding;
 
   staticColliders.push(box);
 }
-
-/*
-  Перевірка circle-player проти Box3.
-*/
 
 function playerCollidesAt(x, z) {
   for (
@@ -323,12 +401,10 @@ function playerCollidesAt(x, z) {
     const dz =
       z - closestZ;
 
-    const distanceSquared =
-      dx * dx + dz * dz;
-
     if (
-      distanceSquared <
-      PLAYER_RADIUS * PLAYER_RADIUS
+      dx * dx + dz * dz <
+      PLAYER_RADIUS *
+        PLAYER_RADIUS
     ) {
       return true;
     }
@@ -337,9 +413,9 @@ function playerCollidesAt(x, z) {
   return false;
 }
 
-/* ======================================================
+/* =====================================================
    SKYBOX
-====================================================== */
+===================================================== */
 
 const pmremGenerator =
   new THREE.PMREMGenerator(
@@ -375,10 +451,6 @@ async function loadSkybox() {
       environment;
 
     pmremGenerator.dispose();
-
-    console.log(
-      "Skybox loaded"
-    );
   } catch (error) {
     console.error(
       "Skybox error:",
@@ -390,9 +462,9 @@ async function loadSkybox() {
   }
 }
 
-/* ======================================================
-   LIGHTING
-====================================================== */
+/* =====================================================
+   LIGHTS
+===================================================== */
 
 const hemisphereLight =
   new THREE.HemisphereLight(
@@ -401,7 +473,9 @@ const hemisphereLight =
     1.05
   );
 
-scene.add(hemisphereLight);
+scene.add(
+  hemisphereLight
+);
 
 const sun =
   new THREE.DirectionalLight(
@@ -448,26 +522,27 @@ const ambientLight =
     0.17
   );
 
-scene.add(ambientLight);
+scene.add(
+  ambientLight
+);
 
-/* ======================================================
-   TEXTURES
-====================================================== */
+/* =====================================================
+   TEXTURE HELPERS
+===================================================== */
 
 const textureLoader =
   new THREE.TextureLoader();
 
 async function loadFirstTexture(
-  fileCandidates
+  candidates
 ) {
   for (
-    const file of fileCandidates
+    const file of candidates
   ) {
     try {
       const texture =
-        await textureLoader.loadAsync(
-          file
-        );
+        await textureLoader
+          .loadAsync(file);
 
       console.log(
         "Texture loaded:",
@@ -475,7 +550,7 @@ async function loadFirstTexture(
       );
 
       return texture;
-    } catch (error) {
+    } catch {
       console.warn(
         "Texture not found:",
         file
@@ -484,11 +559,11 @@ async function loadFirstTexture(
   }
 
   throw new Error(
-    "No texture candidate loaded"
+    "No texture file was found"
   );
 }
 
-function prepareRepeatingTexture(
+function prepareTexture(
   texture,
   repeatX,
   repeatY
@@ -516,9 +591,9 @@ function prepareRepeatingTexture(
   return texture;
 }
 
-/* ======================================================
+/* =====================================================
    BASEPLATE
-====================================================== */
+===================================================== */
 
 const grassMaterial =
   new THREE.MeshStandardMaterial({
@@ -544,17 +619,17 @@ baseplate.castShadow = false;
 
 scene.add(baseplate);
 
-async function loadGrassTexture() {
+async function loadGrass() {
   try {
     const texture =
       await loadFirstTexture(
-        GRASS_TEXTURES
+        GRASS_FILES
       );
 
-    prepareRepeatingTexture(
+    prepareTexture(
       texture,
-      9,
-      12
+      10,
+      14
     );
 
     grassMaterial.map =
@@ -568,23 +643,19 @@ async function loadGrassTexture() {
       true;
   } catch (error) {
     console.error(
-      "Grass texture error:",
+      "Grass error:",
       error
-    );
-
-    grassMaterial.color.set(
-      0x68875b
     );
   }
 }
 
-/* ======================================================
+/* =====================================================
    SIDEWALKS
-====================================================== */
+===================================================== */
 
 const concreteMaterial =
   new THREE.MeshStandardMaterial({
-    color: 0xb7b7b7,
+    color: 0xb9b9b9,
     roughness: 0.97,
     metalness: 0
   });
@@ -610,31 +681,24 @@ function createSidewalk(x) {
   sidewalk.receiveShadow = true;
 
   scene.add(sidewalk);
-
-  /*
-    Тротуар не є collider:
-    по ньому можна ходити.
-  */
-
-  return sidewalk;
 }
 
 createSidewalk(
-  LEFT_SIDEWALK_X
+  SIDEWALK_LEFT_X
 );
 
 createSidewalk(
-  RIGHT_SIDEWALK_X
+  SIDEWALK_RIGHT_X
 );
 
-async function loadConcreteTexture() {
+async function loadConcrete() {
   try {
     const texture =
       await loadFirstTexture(
-        CONCRETE_TEXTURES
+        CONCRETE_FILES
       );
 
-    prepareRepeatingTexture(
+    prepareTexture(
       texture,
       1.4,
       20
@@ -651,15 +715,15 @@ async function loadConcreteTexture() {
       true;
   } catch (error) {
     console.error(
-      "Concrete texture error:",
+      "Concrete error:",
       error
     );
   }
 }
 
-/* ======================================================
+/* =====================================================
    MODEL HELPERS
-====================================================== */
+===================================================== */
 
 function enableModelShadows(
   object,
@@ -685,9 +749,7 @@ function enableModelShadows(
     for (
       const material of materials
     ) {
-      if (
-        material?.map
-      ) {
+      if (material?.map) {
         material.map.colorSpace =
           THREE.SRGBColorSpace;
 
@@ -706,43 +768,7 @@ function enableModelShadows(
   });
 }
 
-/*
-  Центрує модель і ставить
-  її низ на рівень Y = 0.
-*/
-
-function centreAndGroundObject(
-  object
-) {
-  object.updateMatrixWorld(true);
-
-  let box =
-    new THREE.Box3()
-      .setFromObject(
-        object,
-        true
-      );
-
-  const center =
-    new THREE.Vector3();
-
-  box.getCenter(center);
-
-  object.position.x -= center.x;
-  object.position.z -= center.z;
-  object.position.y -= box.min.y;
-
-  object.updateMatrixWorld(true);
-
-  return object;
-}
-
-/*
-  Підганяє горизонтальний
-  розмір моделі.
-*/
-
-function scaleHorizontalSize(
+function scaleHorizontal(
   object,
   targetSize
 ) {
@@ -760,30 +786,49 @@ function scaleHorizontalSize(
 
   box.getSize(size);
 
-  const horizontalSize =
+  const currentSize =
     Math.max(
       size.x,
       size.z
     );
 
-  if (horizontalSize > 0) {
-    const scale =
-      targetSize /
-      horizontalSize;
-
+  if (currentSize > 0) {
     object.scale.multiplyScalar(
-      scale
+      targetSize /
+      currentSize
     );
   }
 
   object.updateMatrixWorld(true);
-
-  return object;
 }
 
-/* ======================================================
-   BAMBO HOUSE
-====================================================== */
+function centerAndGround(
+  object
+) {
+  object.updateMatrixWorld(true);
+
+  const box =
+    new THREE.Box3()
+      .setFromObject(
+        object,
+        true
+      );
+
+  const center =
+    new THREE.Vector3();
+
+  box.getCenter(center);
+
+  object.position.x -= center.x;
+  object.position.z -= center.z;
+  object.position.y -= box.min.y;
+
+  object.updateMatrixWorld(true);
+}
+
+/* =====================================================
+   BAMBO HOUSES
+===================================================== */
 
 const houseFallbackMaterial =
   new THREE.MeshStandardMaterial({
@@ -792,12 +837,7 @@ const houseFallbackMaterial =
     metalness: 0.02
   });
 
-async function loadHouseObject() {
-  /*
-    Спочатку пробуємо завантажити
-    MTL і справжні текстури.
-  */
-
+async function loadHouse() {
   try {
     const mtlLoader =
       new MTLLoader();
@@ -837,21 +877,11 @@ async function loadHouseObject() {
       house
     );
 
-    console.log(
-      "House OBJ + MTL loaded"
-    );
-
     return house;
-  } catch (mtlError) {
-    /*
-      Якщо MTL відсутній,
-      завантажуємо OBJ
-      з нейтральним матеріалом.
-    */
-
+  } catch (error) {
     console.warn(
-      "House MTL was not loaded. Using fallback material.",
-      mtlError
+      "Bambo_House.mtl was not loaded.",
+      error
     );
 
     const objLoader =
@@ -875,24 +905,24 @@ async function loadHouseObject() {
   }
 }
 
-async function createHouseLayout() {
+async function createHouses() {
   try {
     const loadedHouse =
-      await loadHouseObject();
+      await loadHouse();
 
-    scaleHorizontalSize(
+    scaleHorizontal(
       loadedHouse,
       15
     );
 
-    centreAndGroundObject(
+    centerAndGround(
       loadedHouse
     );
 
-    const houseTemplate =
+    const template =
       new THREE.Group();
 
-    houseTemplate.add(
+    template.add(
       loadedHouse
     );
 
@@ -902,7 +932,7 @@ async function createHouseLayout() {
       rotationY
     ) {
       const copy =
-        houseTemplate.clone(true);
+        template.clone(true);
 
       copy.position.set(
         x,
@@ -917,14 +947,8 @@ async function createHouseLayout() {
 
       copy.updateMatrixWorld(true);
 
-      /*
-        Кожен будинок отримує
-        окремий collider.
-      */
-
-      addColliderFromObject(
-        copy,
-        0.25
+      addHouseCollider(
+        copy
       );
     }
 
@@ -933,167 +957,348 @@ async function createHouseLayout() {
       HOUSE_Z_POSITIONS
     ) {
       placeHouse(
-        LEFT_HOUSE_X,
+        HOUSE_LEFT_X,
         z,
-        LEFT_HOUSE_ROTATION
+        HOUSE_LEFT_ROTATION
       );
 
       placeHouse(
-        RIGHT_HOUSE_X,
+        HOUSE_RIGHT_X,
         z,
-        RIGHT_HOUSE_ROTATION
+        HOUSE_RIGHT_ROTATION
       );
     }
-
-    console.log(
-      "Six houses with collisions created"
-    );
   } catch (error) {
     console.error(
-      "House loading error:",
+      "House error:",
       error
     );
   }
 }
 
-/* ======================================================
-   BARRIERS / MINI FENCES
-====================================================== */
+/* =====================================================
+   CORONA BOTTLE TOOL
+===================================================== */
 
-async function createBarriers() {
+const bottleRoot =
+  new THREE.Group();
+
+bottleRoot.position.copy(
+  BOTTLE_BASE_POSITION
+);
+
+bottleRoot.rotation.copy(
+  BOTTLE_BASE_ROTATION
+);
+
+camera.add(
+  bottleRoot
+);
+
+let bottleLoaded = false;
+
+async function loadBottle() {
   try {
-    const loader =
-      new TDSLoader();
-
-    /*
-      Якщо barrier.3ds використовує
-      текстури, поклади їх у models/.
-    */
-
-    loader.setResourcePath(
-      "./models/"
-    );
-
-    const loadedBarrier =
-      await loader.loadAsync(
-        BARRIER_FILE
+    const bottleTexture =
+      await textureLoader.loadAsync(
+        BOTTLE_TEXTURE_FILE
       );
 
-    enableModelShadows(
-      loadedBarrier
-    );
+    bottleTexture.colorSpace =
+      THREE.SRGBColorSpace;
+
+    bottleTexture.anisotropy =
+      renderer.capabilities
+        .getMaxAnisotropy();
+
+    const material =
+      new THREE.MeshStandardMaterial({
+        map: bottleTexture,
+        color: 0xffffff,
+
+        roughness: 0.42,
+        metalness: 0.05,
+
+        transparent: true,
+        opacity: 0.96,
+
+        side: THREE.DoubleSide
+      });
+
+    const loader =
+      new OBJLoader();
+
+    const bottle =
+      await loader.loadAsync(
+        BOTTLE_MODEL_FILE
+      );
+
+    bottle.traverse((child) => {
+      if (!child.isMesh) {
+        return;
+      }
+
+      child.material =
+        material;
+
+      child.castShadow = false;
+      child.receiveShadow = false;
+    });
 
     /*
-      Якщо довга сторона моделі
-      йде по Z, повертаємо її по X.
+      Автоматично робимо пляшку
+      зручною за розміром.
     */
 
-    loadedBarrier
-      .updateMatrixWorld(true);
+    bottle.updateMatrixWorld(true);
 
-    let barrierBox =
+    let box =
       new THREE.Box3()
         .setFromObject(
-          loadedBarrier,
+          bottle,
           true
         );
 
-    const originalSize =
+    const size =
       new THREE.Vector3();
 
-    barrierBox.getSize(
-      originalSize
-    );
+    box.getSize(size);
 
-    if (
-      originalSize.z >
-      originalSize.x
-    ) {
-      loadedBarrier.rotation.y =
-        Math.PI / 2;
-
-      loadedBarrier
-        .updateMatrixWorld(true);
-    }
-
-    /*
-      Ширина паркана приблизно
-      дорівнює ширині тротуару.
-    */
-
-    scaleHorizontalSize(
-      loadedBarrier,
-      4.1
-    );
-
-    centreAndGroundObject(
-      loadedBarrier
-    );
-
-    const barrierTemplate =
-      new THREE.Group();
-
-    barrierTemplate.add(
-      loadedBarrier
-    );
-
-    function placeBarrier(
-      x,
-      z
-    ) {
-      const copy =
-        barrierTemplate.clone(true);
-
-      copy.position.set(
-        x,
-        0.18,
-        z
+    const largestSide =
+      Math.max(
+        size.x,
+        size.y,
+        size.z
       );
 
-      scene.add(copy);
-
-      copy.updateMatrixWorld(true);
-
-      addColliderFromObject(
-        copy,
-        0.12
+    if (largestSide > 0) {
+      bottle.scale.setScalar(
+        0.82 /
+        largestSide
       );
     }
 
-    /*
-      Чотири паркани:
-      верх і низ обох тротуарів.
-    */
+    bottle.updateMatrixWorld(true);
 
-    for (
-      const x of
-      BARRIER_X_POSITIONS
-    ) {
-      for (
-        const z of
-        BARRIER_Z_POSITIONS
-      ) {
-        placeBarrier(
-          x,
-          z
+    box =
+      new THREE.Box3()
+        .setFromObject(
+          bottle,
+          true
         );
-      }
-    }
 
-    console.log(
-      "Four barriers with collisions created"
+    const center =
+      new THREE.Vector3();
+
+    box.getCenter(center);
+
+    bottle.position.set(
+      -center.x,
+      -center.y,
+      -center.z
     );
+
+    bottleRoot.add(
+      bottle
+    );
+
+    bottleLoaded = true;
   } catch (error) {
     console.error(
-      "Barrier loading error:",
+      "Corona bottle error:",
       error
     );
   }
 }
 
-/* ======================================================
+/* =====================================================
+   DRINK ANIMATION
+===================================================== */
+
+let drinking = false;
+let drinkStartTime = 0;
+
+const drinkSoundTimers = [];
+
+function smooth01(value) {
+  const x =
+    THREE.MathUtils.clamp(
+      value,
+      0,
+      1
+    );
+
+  return (
+    x *
+    x *
+    (3 - 2 * x)
+  );
+}
+
+function playDrinkSound() {
+  const sound =
+    new Audio(
+      DRINK_SOUND_FILE
+    );
+
+  sound.volume = 0.62;
+
+  sound.play()
+    .catch(() => {});
+}
+
+function clearDrinkTimers() {
+  while (
+    drinkSoundTimers.length > 0
+  ) {
+    clearTimeout(
+      drinkSoundTimers.pop()
+    );
+  }
+}
+
+function startDrinking() {
+  if (
+    drinking ||
+    !bottleLoaded
+  ) {
+    return;
+  }
+
+  drinking = true;
+
+  drinkStartTime =
+    performance.now() /
+    1000;
+
+  clearDrinkTimers();
+
+  for (
+    let i = 0;
+    i < 4;
+    i++
+  ) {
+    const timer =
+      setTimeout(
+        playDrinkSound,
+        i * 1000
+      );
+
+    drinkSoundTimers.push(
+      timer
+    );
+  }
+}
+
+function updateDrinkAnimation() {
+  if (!drinking) {
+    return;
+  }
+
+  const now =
+    performance.now() /
+    1000;
+
+  const elapsed =
+    now - drinkStartTime;
+
+  let blend = 0;
+
+  /*
+    0.0–0.65:
+    піднести пляшку.
+
+    0.65–3.35:
+    пити.
+
+    3.35–4.0:
+    повернути вниз.
+  */
+
+  if (elapsed < 0.65) {
+    blend =
+      smooth01(
+        elapsed / 0.65
+      );
+  } else if (
+    elapsed < 3.35
+  ) {
+    blend = 1;
+  } else if (
+    elapsed < DRINK_DURATION
+  ) {
+    blend =
+      1 -
+      smooth01(
+        (elapsed - 3.35) /
+        0.65
+      );
+  } else {
+    drinking = false;
+
+    bottleRoot.position.copy(
+      BOTTLE_BASE_POSITION
+    );
+
+    bottleRoot.rotation.copy(
+      BOTTLE_BASE_ROTATION
+    );
+
+    return;
+  }
+
+  bottleRoot.position
+    .lerpVectors(
+      BOTTLE_BASE_POSITION,
+      BOTTLE_DRINK_POSITION,
+      blend
+    );
+
+  bottleRoot.rotation.x =
+    THREE.MathUtils.lerp(
+      BOTTLE_BASE_ROTATION.x,
+      BOTTLE_DRINK_ROTATION.x,
+      blend
+    );
+
+  bottleRoot.rotation.y =
+    THREE.MathUtils.lerp(
+      BOTTLE_BASE_ROTATION.y,
+      BOTTLE_DRINK_ROTATION.y,
+      blend
+    );
+
+  bottleRoot.rotation.z =
+    THREE.MathUtils.lerp(
+      BOTTLE_BASE_ROTATION.z,
+      BOTTLE_DRINK_ROTATION.z,
+      blend
+    );
+
+  /*
+    Легке смішне хитання
+    під час пиття.
+  */
+
+  if (
+    elapsed >= 0.65 &&
+    elapsed < 3.35
+  ) {
+    bottleRoot.rotation.z +=
+      Math.sin(
+        elapsed * 8
+      ) * 0.018;
+
+    bottleRoot.position.y +=
+      Math.sin(
+        elapsed * 7
+      ) * 0.008;
+  }
+}
+
+/* =====================================================
    FOOTSTEPS
-====================================================== */
+===================================================== */
 
 const footsteps =
   new Audio(
@@ -1101,22 +1306,19 @@ const footsteps =
   );
 
 footsteps.loop = true;
-footsteps.volume = 0.24;
+footsteps.volume = 0.22;
 footsteps.playbackRate = 0.96;
 footsteps.preload = "auto";
 
-let footstepsUnlocked =
-  false;
+let audioUnlocked = false;
 
-async function unlockFootsteps() {
-  if (
-    footstepsUnlocked
-  ) {
+async function unlockAudio() {
+  if (audioUnlocked) {
     return;
   }
 
   try {
-    const originalVolume =
+    const oldVolume =
       footsteps.volume;
 
     footsteps.volume = 0;
@@ -1127,37 +1329,38 @@ async function unlockFootsteps() {
     footsteps.currentTime = 0;
 
     footsteps.volume =
-      originalVolume;
+      oldVolume;
 
-    footstepsUnlocked = true;
-  } catch (error) {
+    audioUnlocked = true;
+  } catch {
     console.log(
-      "Footsteps are waiting for interaction"
+      "Audio is waiting for input"
     );
   }
 }
 
 window.addEventListener(
   "pointerdown",
-  unlockFootsteps,
+  unlockAudio,
   { once: true }
 );
 
 window.addEventListener(
   "keydown",
-  unlockFootsteps,
+  unlockAudio,
   { once: true }
 );
 
 function updateFootsteps(
   actualSpeed
 ) {
-  const isWalking =
+  const walking =
     actualSpeed > 0.35;
 
   if (
-    isWalking &&
-    footstepsUnlocked
+    walking &&
+    audioUnlocked &&
+    !drinking
   ) {
     footsteps.playbackRate =
       0.9 +
@@ -1170,8 +1373,7 @@ function updateFootsteps(
     if (
       footsteps.paused
     ) {
-      footsteps
-        .play()
+      footsteps.play()
         .catch(() => {});
     }
   } else if (
@@ -1182,9 +1384,9 @@ function updateFootsteps(
   }
 }
 
-/* ======================================================
-   KEYBOARD
-====================================================== */
+/* =====================================================
+   DESKTOP INPUT
+===================================================== */
 
 const keys =
   new Set();
@@ -1206,10 +1408,6 @@ document.addEventListener(
     );
   }
 );
-
-/* ======================================================
-   DESKTOP CAMERA
-====================================================== */
 
 renderer.domElement
   .addEventListener(
@@ -1260,9 +1458,28 @@ document.addEventListener(
   }
 );
 
-/* ======================================================
+document.addEventListener(
+  "mousedown",
+  (event) => {
+    if (
+      event.button !== 0 ||
+      isMobile
+    ) {
+      return;
+    }
+
+    if (
+      document.pointerLockElement ===
+      renderer.domElement
+    ) {
+      startDrinking();
+    }
+  }
+);
+
+/* =====================================================
    MOBILE JOYSTICK
-====================================================== */
+===================================================== */
 
 const joystickInput =
   new THREE.Vector2();
@@ -1427,9 +1644,9 @@ joystick?.addEventListener(
   resetJoystick
 );
 
-/* ======================================================
-   MOBILE CAMERA
-====================================================== */
+/* =====================================================
+   MOBILE LOOK
+===================================================== */
 
 let lookPointerId = null;
 
@@ -1526,9 +1743,20 @@ lookZone?.addEventListener(
   stopLooking
 );
 
-/* ======================================================
+drinkButton?.addEventListener(
+  "pointerdown",
+  (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    unlockAudio();
+    startDrinking();
+  }
+);
+
+/* =====================================================
    MOVEMENT
-====================================================== */
+===================================================== */
 
 const velocity =
   new THREE.Vector3();
@@ -1536,13 +1764,13 @@ const velocity =
 const targetVelocity =
   new THREE.Vector3();
 
+const movementDirection =
+  new THREE.Vector3();
+
 const forward =
   new THREE.Vector3();
 
 const right =
-  new THREE.Vector3();
-
-const movementDirection =
   new THREE.Vector3();
 
 let currentMovementSpeed = 0;
@@ -1599,11 +1827,6 @@ function getMovementInput() {
   };
 }
 
-/*
-  Рух окремо по X і Z забезпечує
-  стабільне ковзання вздовж стін.
-*/
-
 function movePlayerWithCollision(
   movement
 ) {
@@ -1614,6 +1837,12 @@ function movePlayerWithCollision(
   const limitZ =
     BASE_LENGTH / 2 -
     PLAYER_RADIUS;
+
+  /*
+    Рух X і Z окремо.
+    Завдяки цьому гравець ковзає
+    вздовж стіни, а не застрягає.
+  */
 
   const nextX =
     THREE.MathUtils.clamp(
@@ -1703,12 +1932,23 @@ function updateMovement(
     movementDirection.normalize();
   }
 
+  /*
+    Під час пиття можна рухатися,
+    але трохи повільніше.
+  */
+
+  const speedMultiplier =
+    drinking
+      ? 0.58
+      : 1;
+
   targetVelocity
     .copy(
       movementDirection
     )
     .multiplyScalar(
-      WALK_SPEED
+      WALK_SPEED *
+      speedMultiplier
     );
 
   const hasInput =
@@ -1762,16 +2002,16 @@ function updateMovement(
   );
 }
 
-/* ======================================================
-   WALKING BOB
-====================================================== */
+/* =====================================================
+   WALK BOB
+===================================================== */
 
 let walkingTime = 0;
 
-function updateWalkingBob(
+function updateWalkBob(
   deltaTime
 ) {
-  const walkingAmount =
+  const amount =
     THREE.MathUtils.clamp(
       currentMovementSpeed /
         WALK_SPEED,
@@ -1782,21 +2022,22 @@ function updateWalkingBob(
   walkingTime +=
     deltaTime *
     currentMovementSpeed *
-    2.15;
+    2.1;
 
-  const targetBobY =
+  const targetY =
+    PLAYER_HEIGHT +
     Math.sin(
       walkingTime * 2
     ) *
     0.025 *
-    walkingAmount;
+    amount;
 
-  const targetBobX =
+  const targetX =
     Math.cos(
       walkingTime
     ) *
     0.014 *
-    walkingAmount;
+    amount;
 
   const blend =
     1 -
@@ -1805,38 +2046,37 @@ function updateWalkingBob(
       deltaTime
     );
 
-  camera.position.y =
+  eyePivot.position.y =
     THREE.MathUtils.lerp(
-      camera.position.y,
-      PLAYER_HEIGHT +
-        targetBobY,
+      eyePivot.position.y,
+      targetY,
       blend
     );
 
-  camera.position.x =
+  eyePivot.position.x =
     THREE.MathUtils.lerp(
-      camera.position.x,
-      targetBobX,
+      eyePivot.position.x,
+      targetX,
       blend
     );
 }
 
-/* ======================================================
-   ASSET INITIALIZATION
-====================================================== */
+/* =====================================================
+   LOAD WORLD
+===================================================== */
 
-async function loadWorldAssets() {
+async function loadWorld() {
   setLoadingText(
-    "Завантаження світу..."
+    "Завантаження SoftStreer..."
   );
 
   const results =
     await Promise.allSettled([
       loadSkybox(),
-      loadGrassTexture(),
-      loadConcreteTexture(),
-      createHouseLayout(),
-      createBarriers()
+      loadGrass(),
+      loadConcrete(),
+      createHouses(),
+      loadBottle()
     ]);
 
   for (
@@ -1855,11 +2095,11 @@ async function loadWorldAssets() {
   hideLoadingScreen();
 }
 
-loadWorldAssets();
+loadWorld();
 
-/* ======================================================
-   GAME LOOP
-====================================================== */
+/* =====================================================
+   LOOP
+===================================================== */
 
 const clock =
   new THREE.Clock();
@@ -1878,16 +2118,18 @@ function animate() {
   player.rotation.y =
     yaw;
 
-  pitchPivot.rotation.x =
+  eyePivot.rotation.x =
     pitch;
 
   updateMovement(
     deltaTime
   );
 
-  updateWalkingBob(
+  updateWalkBob(
     deltaTime
   );
+
+  updateDrinkAnimation();
 
   renderer.render(
     scene,
@@ -1897,9 +2139,9 @@ function animate() {
 
 animate();
 
-/* ======================================================
+/* =====================================================
    RESIZE
-====================================================== */
+===================================================== */
 
 window.addEventListener(
   "resize",
@@ -1908,8 +2150,7 @@ window.addEventListener(
       window.innerWidth /
       window.innerHeight;
 
-    camera
-      .updateProjectionMatrix();
+    camera.updateProjectionMatrix();
 
     renderer.setSize(
       window.innerWidth,
@@ -1918,9 +2159,9 @@ window.addEventListener(
   }
 );
 
-/* ======================================================
+/* =====================================================
    SERVICE WORKER
-====================================================== */
+===================================================== */
 
 if (
   "serviceWorker" in
@@ -1934,14 +2175,13 @@ if (
         .register(
           "./service-worker.js"
         )
-        .catch(
-          (error) => {
-            console.error(
-              "Service worker error:",
-              error
-            );
-          }
-        );
+        .catch((error) => {
+          console.error(
+            "Service worker error:",
+            error
+          );
+        });
     }
   );
 }
+```
