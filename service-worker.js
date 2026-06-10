@@ -1,5 +1,5 @@
 const CACHE_VERSION =
-  "softstreer-v12";
+  "softstreer-v13";
 
 const CORE_CACHE =
   `${CACHE_VERSION}-core`;
