@@ -1309,10 +1309,12 @@ async function loadBottle() {
       шийку догори.
     */
 
-    orientBottleNeckUp(
-      bottle,
-      bottleModelPivot
-    );
+ /*
+  Для Corona.obj автоматичне визначення
+  переплутало дно із шийкою.
+  Перевертаємо модель вертикально на 180°.
+*/
+bottleModelPivot.rotateZ(Math.PI);
 
     bottleRoot.position.copy(
       bottleBasePosition
