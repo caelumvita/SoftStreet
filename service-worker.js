@@ -1,21 +1,15 @@
 const CACHE_NAME =
-  "dawnline-walking-v2";
+  "dawnline-neighbourhood-v3";
 
-const LOCAL_FILES = [
+const CORE_FILES = [
   "./",
   "./index.html",
   "./style.css",
   "./main.js",
-  "./manifest.json",
-
-  "./textures/10450_Rectangular_Grass_Patch_v1_Diffuse.jpg",
-  "./textures/concrete_floor_worn_001_diff_1k.jpg",
-  "./textures/qwantani_dusk_2_puresky_1k.exr",
-
-  "./models/building_04.obj",
-
-  "./sound/soundreality-footsteps-walking-boots-parquet-1-420135.mp3"
+  "./manifest.json"
 ];
+
+/* INSTALL */
 
 self.addEventListener(
   "install",
@@ -25,17 +19,16 @@ self.addEventListener(
     event.waitUntil(
       caches
         .open(CACHE_NAME)
-        .then(async (cache) => {
-          await Promise.allSettled(
-            LOCAL_FILES.map(
-              (file) =>
-                cache.add(file)
-            )
+        .then((cache) => {
+          return cache.addAll(
+            CORE_FILES
           );
         })
     );
   }
 );
+
+/* ACTIVATE */
 
 self.addEventListener(
   "activate",
@@ -43,16 +36,16 @@ self.addEventListener(
     event.waitUntil(
       caches
         .keys()
-        .then((cacheNames) => {
+        .then((names) => {
           return Promise.all(
-            cacheNames.map(
-              (cacheName) => {
+            names.map(
+              (name) => {
                 if (
-                  cacheName !==
+                  name !==
                   CACHE_NAME
                 ) {
                   return caches.delete(
-                    cacheName
+                    name
                   );
                 }
               }
@@ -65,6 +58,8 @@ self.addEventListener(
   }
 );
 
+/* NETWORK FIRST */
+
 self.addEventListener(
   "fetch",
   (event) => {
@@ -76,19 +71,9 @@ self.addEventListener(
     }
 
     event.respondWith(
-      caches
-        .match(event.request)
-        .then(async (cached) => {
-          if (cached) {
-            return cached;
-          }
-
-          try {
-            const response =
-              await fetch(
-                event.request
-              );
-
+      fetch(event.request)
+        .then(
+          async (response) => {
             if (
               response &&
               (
@@ -109,14 +94,21 @@ self.addEventListener(
             }
 
             return response;
-          } catch (error) {
-            console.error(
-              "Offline fetch failed:",
-              error
+          }
+        )
+        .catch(async () => {
+          const cached =
+            await caches.match(
+              event.request
             );
 
-            throw error;
+          if (cached) {
+            return cached;
           }
+
+          throw new Error(
+            "File is unavailable offline"
+          );
         })
     );
   }
