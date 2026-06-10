@@ -794,11 +794,20 @@ async function loadBottle() {
       bottleModelPivot.rotation.x =
         -Math.PI / 2;
     }
+/*
+  Повертаємо етикетку до камери.
+*/
 
-    bottleModelPivot.rotation.y +=
-      Math.PI;
+bottleModelPivot.rotation.y += Math.PI;
 
-    bottleModelPivot.add(bottle);
+/*
+  Перевертаємо пляшку правильно:
+  шийка буде зверху, дно — знизу.
+*/
+
+bottleModelPivot.rotation.z += Math.PI;
+
+bottleModelPivot.add(bottle);
 
     bottleRoot.visible = true;
     bottleLoaded = true;
