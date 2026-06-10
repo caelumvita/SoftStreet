@@ -1,4 +1,4 @@
-const CACHE_NAME = "dawnline-cache-v11";
+const CACHE_NAME = "dawnline-cache-v30";
 
 const FILES = [
   "./",
@@ -7,16 +7,18 @@ const FILES = [
   "./main.js",
   "./manifest.json",
   "./models/m4a1_s.obj",
-  "./sound/universfield-gunshot-352466.mp3"
+  "./sound/universfield-gunshot-352466.mp3",
   "./textures/fire-sparks-png-transparent-11563012040mvvgsgvryo.png",
-"./textures/bullet-1.png"
+  "./textures/bullet-1.png"
 ];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(FILES);
+    })
   );
 });
 
