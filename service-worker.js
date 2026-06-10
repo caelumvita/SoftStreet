@@ -1,4 +1,4 @@
-const CACHE_NAME = "dawnline-cache-v10";
+const CACHE_NAME = "dawnline-cache-v11";
 
 const FILES = [
   "./",
@@ -8,6 +8,8 @@ const FILES = [
   "./manifest.json",
   "./models/m4a1_s.obj",
   "./sound/universfield-gunshot-352466.mp3"
+  "./textures/fire-sparks-png-transparent-11563012040mvvgsgvryo.png",
+"./textures/bullet-1.png"
 ];
 
 self.addEventListener("install", (event) => {
