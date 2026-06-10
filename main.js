@@ -1,6 +1,4 @@
-### `main.js`
 
-```js
 import * as THREE from "three";
 
 import {
@@ -2200,4 +2198,4 @@ if (
     }
   );
 }
-```
+
