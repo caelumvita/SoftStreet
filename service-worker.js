@@ -1,5 +1,23 @@
+### `manifest.json`
+
+```json
+{
+  "name": "SoftStreer🍻",
+  "short_name": "SoftStreer",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#101820",
+  "theme_color": "#101820",
+  "orientation": "landscape",
+  "description": "A small first-person neighbourhood walking game."
+}
+```
+
+### `service-worker.js`
+
+```js
 const CACHE_NAME =
-  "dawnline-neighbourhood-v3";
+  "softstreer-v1";
 
 const CORE_FILES = [
   "./",
@@ -8,8 +26,6 @@ const CORE_FILES = [
   "./main.js",
   "./manifest.json"
 ];
-
-/* INSTALL */
 
 self.addEventListener(
   "install",
@@ -28,24 +44,22 @@ self.addEventListener(
   }
 );
 
-/* ACTIVATE */
-
 self.addEventListener(
   "activate",
   (event) => {
     event.waitUntil(
       caches
         .keys()
-        .then((names) => {
+        .then((cacheNames) => {
           return Promise.all(
-            names.map(
-              (name) => {
+            cacheNames.map(
+              (cacheName) => {
                 if (
-                  name !==
+                  cacheName !==
                   CACHE_NAME
                 ) {
                   return caches.delete(
-                    name
+                    cacheName
                   );
                 }
               }
@@ -58,7 +72,14 @@ self.addEventListener(
   }
 );
 
-/* NETWORK FIRST */
+/*
+  Спочатку перевіряємо GitHub,
+  потім використовуємо кеш.
+
+  Усі моделі, звуки, текстури та
+  бібліотеки кешуються автоматично
+  після першого успішного запуску.
+*/
 
 self.addEventListener(
   "fetch",
@@ -107,9 +128,10 @@ self.addEventListener(
           }
 
           throw new Error(
-            "File is unavailable offline"
+            "Resource is unavailable offline"
           );
         })
     );
   }
 );
+```
