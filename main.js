@@ -70,29 +70,16 @@ const DRINK_DURATION = 4;
    HTML
 ========================================================= */
 
-const loadingScreen =
-  document.getElementById("loadingScreen");
+const loadingScreen = document.getElementById("loadingScreen");
+const loadingText = document.getElementById("loadingText");
 
-const loadingText =
-  document.getElementById("loadingText");
+const desktopHint = document.getElementById("desktopHint");
+const mobileHint = document.getElementById("mobileHint");
 
-const desktopHint =
-  document.getElementById("desktopHint");
-
-const mobileHint =
-  document.getElementById("mobileHint");
-
-const joystick =
-  document.getElementById("joystick");
-
-const joystickStick =
-  document.getElementById("joystickStick");
-
-const lookZone =
-  document.getElementById("lookZone");
-
-const drinkButton =
-  document.getElementById("drinkButton");
+const joystick = document.getElementById("joystick");
+const joystickStick = document.getElementById("joystickStick");
+const lookZone = document.getElementById("lookZone");
+const drinkButton = document.getElementById("drinkButton");
 
 const isMobile =
   window.matchMedia("(pointer: coarse)").matches ||
@@ -153,10 +140,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: "high-performance"
 });
 
-renderer.setSize(
-  window.innerWidth,
-  window.innerHeight
-);
+renderer.setSize(window.innerWidth, window.innerHeight);
 
 renderer.setPixelRatio(
   Math.min(window.devicePixelRatio, 1.5)
@@ -247,8 +231,7 @@ const textureLoader = new THREE.TextureLoader();
 async function loadFirstTexture(candidates) {
   for (const file of candidates) {
     try {
-      const texture =
-        await textureLoader.loadAsync(file);
+      const texture = await textureLoader.loadAsync(file);
 
       console.log("Texture loaded:", file);
       return texture;
@@ -280,8 +263,7 @@ function prepareRepeatingTexture(
 ========================================================= */
 
 async function loadSky() {
-  const generator =
-    new THREE.PMREMGenerator(renderer);
+  const generator = new THREE.PMREMGenerator(renderer);
 
   generator.compileEquirectangularShader();
 
@@ -333,8 +315,7 @@ scene.add(baseplate);
 
 async function loadGrass() {
   try {
-    const texture =
-      await loadFirstTexture(FILES.grass);
+    const texture = await loadFirstTexture(FILES.grass);
 
     prepareRepeatingTexture(texture, 10, 14);
 
@@ -381,8 +362,7 @@ createSidewalk(SIDEWALK_RIGHT_X);
 
 async function loadConcrete() {
   try {
-    const texture =
-      await loadFirstTexture(FILES.concrete);
+    const texture = await loadFirstTexture(FILES.concrete);
 
     prepareRepeatingTexture(texture, 1.4, 20);
 
@@ -544,11 +524,7 @@ async function createHouses() {
     const template = new THREE.Group();
     template.add(loadedHouse);
 
-    function placeHouse(
-      x,
-      z,
-      rotationY
-    ) {
+    function placeHouse(x, z, rotationY) {
       const copy = template.clone(true);
 
       copy.position.set(x, 0, z);
@@ -584,12 +560,6 @@ async function createHouses() {
    CORONA BOTTLE
 ========================================================= */
 
-/*
-  Тут ми вже не вгадуємо автоматично.
-  Просто ставимо пляшку вручну так,
-  як вона має виглядати у грі.
-*/
-
 const bottleRoot = new THREE.Group();
 camera.add(bottleRoot);
 
@@ -598,38 +568,42 @@ bottleRoot.add(bottleModelPivot);
 
 /*
   ЗВИЧАЙНЕ ПОЛОЖЕННЯ В РУЦІ
-  Більш вертикально і праворуч.
+
+  Пляшка стоїть праворуч, нижче центру.
+  Вона має виглядати як предмет у руці,
+  а не як автомат.
 */
 
 const bottleBasePosition = new THREE.Vector3(
-  0.43,
-  -0.56,
-  -0.76
+  0.42,
+  -0.58,
+  -0.78
 );
 
 const bottleBaseEuler = new THREE.Euler(
   0.02,
   -0.10,
-  0.16,
+  0.08,
   "XYZ"
 );
 
 /*
   ПОЛОЖЕННЯ ПІД ЧАС ПИТТЯ
-  Залишаємо близьке до того,
-  що в тебе вже добре виглядало.
+
+  Тут пляшка підіймається ближче до обличчя
+  і нахиляється так, щоб пити через відкривачку.
 */
 
 const bottleDrinkPosition = new THREE.Vector3(
-  0.08,
-  -0.08,
+  0.06,
+  -0.10,
   -0.30
 );
 
 const bottleDrinkEuler = new THREE.Euler(
+  1.08,
+  -0.08,
   0.10,
-  -0.06,
-  1.10,
   "XYZ"
 );
 
@@ -643,14 +617,8 @@ const bottleDrinkQuaternion =
     bottleDrinkEuler
   );
 
-bottleRoot.position.copy(
-  bottleBasePosition
-);
-
-bottleRoot.quaternion.copy(
-  bottleBaseQuaternion
-);
-
+bottleRoot.position.copy(bottleBasePosition);
+bottleRoot.quaternion.copy(bottleBaseQuaternion);
 bottleRoot.visible = false;
 
 let bottleLoaded = false;
@@ -673,9 +641,7 @@ async function loadBottle() {
           FILES.bottleTexture
         );
 
-      texture.colorSpace =
-        THREE.SRGBColorSpace;
-
+      texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy =
         renderer.capabilities.getMaxAnisotropy();
 
@@ -712,7 +678,7 @@ async function loadBottle() {
     });
 
     /*
-      Масштабування пляшки.
+      Масштабуємо пляшку.
     */
 
     bottle.updateMatrixWorld(true);
@@ -740,7 +706,7 @@ async function loadBottle() {
     bottle.updateMatrixWorld(true);
 
     /*
-      Центруємо модель у pivot.
+      Центруємо пляшку в pivot.
     */
 
     box = new THREE.Box3().setFromObject(
@@ -758,41 +724,31 @@ async function loadBottle() {
     );
 
     /*
-      РУЧНА ОРІЄНТАЦІЯ Corona.obj
+      ГОЛОВНИЙ ФІКС.
 
-      Це значення підібране не ідеально математично,
-      а по реальному вигляду:
-      - у звичайному стані пляшка стоїть більш вертикально;
-      - при питті нахиляється природно.
+      Corona.obj у твоєму файлі лежить вздовж Z.
+      Цей поворот ставить її вертикально.
+
+      Якщо раптом після тесту відкривачка буде знизу,
+      зміни Math.PI / 2 на -Math.PI / 2.
     */
 
     bottleModelPivot.rotation.set(
-      0.0,
-      Math.PI,
       Math.PI / 2,
+      Math.PI,
+      0,
       "XYZ"
     );
 
-    /*
-      Легке додаткове підкручування,
-      щоб етикетка дивилась більш-менш назовні.
-    */
-    bottleModelPivot.rotateY(-0.18);
-
     bottleModelPivot.add(bottle);
 
-    bottleRoot.position.copy(
-      bottleBasePosition
-    );
-
-    bottleRoot.quaternion.copy(
-      bottleBaseQuaternion
-    );
+    bottleRoot.position.copy(bottleBasePosition);
+    bottleRoot.quaternion.copy(bottleBaseQuaternion);
 
     bottleRoot.visible = true;
     bottleLoaded = true;
 
-    console.log("Corona bottle loaded manually");
+    console.log("Corona bottle loaded");
   } catch (error) {
     console.error("Bottle error:", error);
   }
@@ -802,18 +758,14 @@ async function loadBottle() {
    AUDIO
 ========================================================= */
 
-const footsteps = new Audio(
-  FILES.footsteps
-);
+const footsteps = new Audio(FILES.footsteps);
 
 footsteps.loop = true;
 footsteps.volume = 0.22;
 footsteps.playbackRate = 0.96;
 footsteps.preload = "auto";
 
-const drinkSoundTemplate = new Audio(
-  FILES.drink
-);
+const drinkSoundTemplate = new Audio(FILES.drink);
 
 drinkSoundTemplate.volume = 0.65;
 drinkSoundTemplate.preload = "auto";
@@ -913,10 +865,7 @@ function clearDrinkTimers() {
 }
 
 function startDrinking() {
-  if (
-    drinking ||
-    !bottleLoaded
-  ) {
+  if (drinking || !bottleLoaded) {
     return;
   }
 
@@ -1060,10 +1009,7 @@ document.addEventListener("mousedown", (event) => {
 const joystickInput = new THREE.Vector2();
 let joystickPointerId = null;
 
-function updateJoystick(
-  clientX,
-  clientY
-) {
+function updateJoystick(clientX, clientY) {
   if (!joystick || !joystickStick) {
     return;
   }
@@ -1295,9 +1241,7 @@ function getMovementInput() {
   };
 }
 
-function movePlayerWithCollision(
-  movement
-) {
+function movePlayerWithCollision(movement) {
   const movementLength = Math.hypot(
     movement.x,
     movement.z
