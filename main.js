@@ -791,75 +791,63 @@ async function createHouses() {
    CORONA BOTTLE
 ========================================================= */
 
-/*
-  bottleRoot:
-  рух між рукою та обличчям.
+/* =========================================================
+   CORONA BOTTLE
+========================================================= */
 
-  bottleModelPivot:
-  правильна орієнтація самої OBJ-моделі.
-*/
-
-const bottleRoot =
-  new THREE.Group();
-
+const bottleRoot = new THREE.Group();
 camera.add(bottleRoot);
 
-const bottleModelPivot =
-  new THREE.Group();
+/*
+  bottleModelPivot відповідає тільки
+  за правильну орієнтацію OBJ-моделі.
+*/
 
-bottleRoot.add(
-  bottleModelPivot
+const bottleModelPivot = new THREE.Group();
+bottleRoot.add(bottleModelPivot);
+
+/*
+  Звичайне положення пляшки:
+  вертикально, праворуч і трохи внизу.
+*/
+
+const bottleBasePosition = new THREE.Vector3(
+  0.4,
+  -0.56,
+  -0.76
+);
+
+const bottleBaseEuler = new THREE.Euler(
+  0.03,
+  -0.1,
+  0.03,
+  "XYZ"
 );
 
 /*
-  Пляшка у звичайному положенні.
+  Положення під час пиття:
+  пляшка переходить ближче до центру
+  та нахиляється шийкою до обличчя.
 */
 
-const bottleBasePosition =
-  new THREE.Vector3(
-    0.39,
-    -0.5,
-    -0.72
-  );
+const bottleDrinkPosition = new THREE.Vector3(
+  0.06,
+  -0.1,
+  -0.28
+);
 
-const bottleBaseEuler =
-  new THREE.Euler(
-    0.08,
-    -0.18,
-    0.08,
-    "XYZ"
-  );
+const bottleDrinkEuler = new THREE.Euler(
+  0.08,
+  -0.04,
+  1.05,
+  "XYZ"
+);
 
-/*
-  Пляшка біля обличчя.
-*/
+const bottleBaseQuaternion = new THREE.Quaternion()
+  .setFromEuler(bottleBaseEuler);
 
-const bottleDrinkPosition =
-  new THREE.Vector3(
-    0.08,
-    -0.08,
-    -0.32
-  );
-
-const bottleDrinkEuler =
-  new THREE.Euler(
-    1.08,
-    -0.08,
-    -0.28,
-    "XYZ"
-  );
-
-const bottleBaseQuaternion =
-  new THREE.Quaternion()
-    .setFromEuler(
-      bottleBaseEuler
-    );
-
-const bottleDrinkQuaternion =
-  new THREE.Quaternion()
-    .setFromEuler(
-      bottleDrinkEuler
-    );
+const bottleDrinkQuaternion = new THREE.Quaternion()
+  .setFromEuler(bottleDrinkEuler);
 
 bottleRoot.position.copy(
   bottleBasePosition
@@ -872,6 +860,303 @@ bottleRoot.quaternion.copy(
 bottleRoot.visible = false;
 
 let bottleLoaded = false;
+
+/*
+  Збираємо всі вершини моделі
+  в локальних координатах bottleModelPivot.
+*/
+
+function getBottlePointsInPivot(
+  bottleObject,
+  pivot
+) {
+  pivot.updateMatrixWorld(true);
+  bottleObject.updateMatrixWorld(true);
+
+  const inversePivotMatrix = new THREE.Matrix4()
+    .copy(pivot.matrixWorld)
+    .invert();
+
+  const points = [];
+
+  bottleObject.traverse((child) => {
+    if (!child.isMesh) {
+      return;
+    }
+
+    const positionAttribute =
+      child.geometry?.attributes?.position;
+
+    if (!positionAttribute) {
+      return;
+    }
+
+    child.updateMatrixWorld(true);
+
+    const meshToPivotMatrix =
+      new THREE.Matrix4().multiplyMatrices(
+        inversePivotMatrix,
+        child.matrixWorld
+      );
+
+    const vertex = new THREE.Vector3();
+
+    for (
+      let index = 0;
+      index < positionAttribute.count;
+      index++
+    ) {
+      vertex
+        .fromBufferAttribute(
+          positionAttribute,
+          index
+        )
+        .applyMatrix4(
+          meshToPivotMatrix
+        );
+
+      points.push(vertex.clone());
+    }
+  });
+
+  return points;
+}
+
+/*
+  Обчислюємо товщину моделі біля
+  одного з двох кінців довгої осі.
+
+  Вузький кінець — це шийка пляшки.
+*/
+
+function calculateEndWidth(
+  points,
+  axis,
+  axisMinimum,
+  axisMaximum,
+  checkMaximumEnd
+) {
+  const axisLength =
+    axisMaximum - axisMinimum;
+
+  const endSize =
+    axisLength * 0.16;
+
+  const endPoints =
+    points.filter((point) => {
+      const coordinate =
+        point.getComponent(axis);
+
+      if (checkMaximumEnd) {
+        return (
+          coordinate >=
+          axisMaximum - endSize
+        );
+      }
+
+      return (
+        coordinate <=
+        axisMinimum + endSize
+      );
+    });
+
+  if (endPoints.length === 0) {
+    return Infinity;
+  }
+
+  const otherAxes =
+    [0, 1, 2].filter(
+      (value) => value !== axis
+    );
+
+  let centerA = 0;
+  let centerB = 0;
+
+  for (const point of endPoints) {
+    centerA +=
+      point.getComponent(
+        otherAxes[0]
+      );
+
+    centerB +=
+      point.getComponent(
+        otherAxes[1]
+      );
+  }
+
+  centerA /= endPoints.length;
+  centerB /= endPoints.length;
+
+  let averageRadiusSquared = 0;
+
+  for (const point of endPoints) {
+    const differenceA =
+      point.getComponent(
+        otherAxes[0]
+      ) - centerA;
+
+    const differenceB =
+      point.getComponent(
+        otherAxes[1]
+      ) - centerB;
+
+    averageRadiusSquared +=
+      differenceA * differenceA +
+      differenceB * differenceB;
+  }
+
+  return (
+    averageRadiusSquared /
+    endPoints.length
+  );
+}
+
+/*
+  Автоматично визначаємо:
+
+  1. уздовж якої осі розташована пляшка;
+  2. на якому кінці знаходиться шийка;
+  3. повертаємо шийку строго догори.
+*/
+
+function orientBottleNeckUp(
+  bottleObject,
+  pivot
+) {
+  pivot.rotation.set(0, 0, 0);
+  pivot.quaternion.identity();
+
+  pivot.updateMatrixWorld(true);
+  bottleObject.updateMatrixWorld(true);
+
+  const points =
+    getBottlePointsInPivot(
+      bottleObject,
+      pivot
+    );
+
+  if (points.length === 0) {
+    console.warn(
+      "Не вдалося прочитати вершини пляшки"
+    );
+
+    return;
+  }
+
+  const box =
+    new THREE.Box3()
+      .setFromPoints(points);
+
+  const size =
+    new THREE.Vector3();
+
+  box.getSize(size);
+
+  /*
+    Знаходимо найдовшу вісь.
+  */
+
+  let longAxis = 0;
+
+  if (
+    size.y >= size.x &&
+    size.y >= size.z
+  ) {
+    longAxis = 1;
+  } else if (
+    size.z >= size.x &&
+    size.z >= size.y
+  ) {
+    longAxis = 2;
+  }
+
+  const axisMinimum =
+    box.min.getComponent(
+      longAxis
+    );
+
+  const axisMaximum =
+    box.max.getComponent(
+      longAxis
+    );
+
+  const minimumEndWidth =
+    calculateEndWidth(
+      points,
+      longAxis,
+      axisMinimum,
+      axisMaximum,
+      false
+    );
+
+  const maximumEndWidth =
+    calculateEndWidth(
+      points,
+      longAxis,
+      axisMinimum,
+      axisMaximum,
+      true
+    );
+
+  /*
+    Вужчий кінець вважаємо шийкою.
+  */
+
+  const neckIsAtMaximum =
+    maximumEndWidth <
+    minimumEndWidth;
+
+  const bottleDirection =
+    new THREE.Vector3();
+
+  if (longAxis === 0) {
+    bottleDirection.set(
+      neckIsAtMaximum ? 1 : -1,
+      0,
+      0
+    );
+  } else if (longAxis === 1) {
+    bottleDirection.set(
+      0,
+      neckIsAtMaximum ? 1 : -1,
+      0
+    );
+  } else {
+    bottleDirection.set(
+      0,
+      0,
+      neckIsAtMaximum ? 1 : -1
+    );
+  }
+
+  const upwardDirection =
+    new THREE.Vector3(
+      0,
+      1,
+      0
+    );
+
+  pivot.quaternion.setFromUnitVectors(
+    bottleDirection,
+    upwardDirection
+  );
+
+  /*
+    Розвертаємо етикетку до камери.
+
+    Якщо етикетка раптом дивитиметься
+    назад, зміни Math.PI на 0.
+  */
+
+  pivot.rotateY(Math.PI);
+
+  console.log(
+    "Bottle axis:",
+    longAxis,
+    "Neck at maximum:",
+    neckIsAtMaximum
+  );
+}
 
 async function loadBottle() {
   try {
@@ -886,21 +1171,21 @@ async function loadBottle() {
       });
 
     try {
-      const texture =
+      const bottleTexture =
         await textureLoader.loadAsync(
           FILES.bottleTexture
         );
 
-      texture.colorSpace =
+      bottleTexture.colorSpace =
         THREE.SRGBColorSpace;
 
-      texture.anisotropy =
+      bottleTexture.anisotropy =
         renderer.capabilities
           .getMaxAnisotropy();
 
       bottleMaterial =
         new THREE.MeshStandardMaterial({
-          map: texture,
+          map: bottleTexture,
           color: 0xffffff,
           roughness: 0.38,
           metalness: 0.03,
@@ -932,28 +1217,57 @@ async function loadBottle() {
     });
 
     /*
-      Спочатку центруємо модель.
+      Спочатку додаємо модель
+      в орієнтаційний pivot.
     */
+
+    bottleModelPivot.add(bottle);
+
+    bottleModelPivot.rotation.set(
+      0,
+      0,
+      0
+    );
+
+    bottle.position.set(
+      0,
+      0,
+      0
+    );
+
+    bottle.scale.set(
+      1,
+      1,
+      1
+    );
 
     bottle.updateMatrixWorld(true);
 
+    /*
+      Визначаємо початковий розмір
+      і зменшуємо пляшку.
+    */
+
+    let points =
+      getBottlePointsInPivot(
+        bottle,
+        bottleModelPivot
+      );
+
     let box =
       new THREE.Box3()
-        .setFromObject(
-          bottle,
-          true
-        );
+        .setFromPoints(points);
 
-    const originalSize =
+    const initialSize =
       new THREE.Vector3();
 
-    box.getSize(originalSize);
+    box.getSize(initialSize);
 
     const largestSide =
       Math.max(
-        originalSize.x,
-        originalSize.y,
-        originalSize.z
+        initialSize.x,
+        initialSize.y,
+        initialSize.z
       );
 
     if (largestSide > 0) {
@@ -964,53 +1278,55 @@ async function loadBottle() {
 
     bottle.updateMatrixWorld(true);
 
+    /*
+      Центруємо пляшку точно
+      по центру pivot.
+    */
+
+    points =
+      getBottlePointsInPivot(
+        bottle,
+        bottleModelPivot
+      );
+
     box =
       new THREE.Box3()
-        .setFromObject(
-          bottle,
-          true
-        );
+        .setFromPoints(points);
 
     const center =
       new THREE.Vector3();
 
     box.getCenter(center);
 
-    bottle.position.set(
-      -center.x,
-      -center.y,
-      -center.z
-    );
+    bottle.position.x -= center.x;
+    bottle.position.y -= center.y;
+    bottle.position.z -= center.z;
+
+    bottle.updateMatrixWorld(true);
 
     /*
-      ВАЖЛИВИЙ ФІКС.
-
-      У Corona.obj довга вісь пляшки
-      лежить горизонтально по X.
-
-      Раніше +90° ставило пляшку
-      дном догори.
-
-      Тепер використовуємо -90°:
-      шийка зверху, дно знизу.
+      Тепер автоматично ставимо
+      шийку догори.
     */
 
-    bottleModelPivot.rotation.set(
-      0,
-      Math.PI,
-      -Math.PI / 2,
-      "XYZ"
+    orientBottleNeckUp(
+      bottle,
+      bottleModelPivot
     );
 
-    bottleModelPivot.add(
-      bottle
+    bottleRoot.position.copy(
+      bottleBasePosition
+    );
+
+    bottleRoot.quaternion.copy(
+      bottleBaseQuaternion
     );
 
     bottleRoot.visible = true;
     bottleLoaded = true;
 
     console.log(
-      "Corona bottle loaded upright"
+      "Corona bottle loaded correctly"
     );
   } catch (error) {
     console.error(
@@ -1019,7 +1335,6 @@ async function loadBottle() {
     );
   }
 }
-
 /* =========================================================
    AUDIO
 ========================================================= */
