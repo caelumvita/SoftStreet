@@ -1,4 +1,3 @@
-
 import * as THREE from "three";
 
 import {
@@ -9,56 +8,37 @@ import {
   OBJLoader
 } from "three/addons/loaders/OBJLoader.js";
 
-import {
-  MTLLoader
-} from "three/addons/loaders/MTLLoader.js";
-
 /* =====================================================
    FILES
 ===================================================== */
 
-const SKYBOX_FILE =
-  "./textures/qwantani_dusk_2_puresky_1k.exr";
+const FILES = {
+  sky: "./textures/qwantani_dusk_2_puresky_1k.exr",
 
-const HOUSE_FOLDER =
-  "./models/";
+  grass: [
+    "./textures/aerial_grass_rock_diff_1k.jpg",
+    "./textures/aerial_grass_rock_diff_1k.png",
+    "./textures/aerial_grass_rock_diff_1k.jpeg",
+    "./textures/aerial_grass_rock_diff_1k.webp"
+  ],
 
-const HOUSE_OBJ_FILE =
-  "Bambo_House.obj";
+  concrete: [
+    "./textures/concrete_floor_worn_001_diff_1k.jpg",
+    "./textures/concrete_floor_worn_001_diff_1k.png",
+    "./textures/concrete_floor_worn_001_diff_1k.jpeg",
+    "./textures/concrete_floor_worn_001_diff_1k.webp"
+  ],
 
-const HOUSE_MTL_FILE =
-  "Bambo_House.mtl";
+  house: "./models/Bambo_House.obj",
+  bottle: "./models/Corona.obj",
+  bottleTexture: "./textures/BotellaText.jpg",
 
-const BOTTLE_MODEL_FILE =
-  "./models/Corona.obj";
+  footsteps:
+    "./sound/soundreality-footsteps-walking-boots-parquet-1-420135.mp3",
 
-const BOTTLE_TEXTURE_FILE =
-  "./textures/BotellaText.jpg";
-
-const FOOTSTEPS_FILE =
-  "./sound/soundreality-footsteps-walking-boots-parquet-1-420135.mp3";
-
-const DRINK_SOUND_FILE =
-  "./sound/nahtt-drink-323882.mp3";
-
-/*
-  Код перевірить різні розширення,
-  якщо текстура збережена не як JPG.
-*/
-
-const GRASS_FILES = [
-  "./textures/aerial_grass_rock_diff_1k.jpg",
-  "./textures/aerial_grass_rock_diff_1k.png",
-  "./textures/aerial_grass_rock_diff_1k.jpeg",
-  "./textures/aerial_grass_rock_diff_1k.webp"
-];
-
-const CONCRETE_FILES = [
-  "./textures/concrete_floor_worn_001_diff_1k.jpg",
-  "./textures/concrete_floor_worn_001_diff_1k.png",
-  "./textures/concrete_floor_worn_001_diff_1k.jpeg",
-  "./textures/concrete_floor_worn_001_diff_1k.webp"
-];
+  drink:
+    "./sound/nahtt-drink-323882.mp3"
+};
 
 /* =====================================================
    SETTINGS
@@ -70,16 +50,12 @@ const PLAYER_RADIUS = 0.48;
 const BASE_WIDTH = 72;
 const BASE_LENGTH = 96;
 
-const WALK_SPEED = 5.25;
+const WALK_SPEED = 5.2;
 const ACCELERATION = 12;
 const DECELERATION = 15;
 
 const MOUSE_SENSITIVITY = 0.002;
 const TOUCH_SENSITIVITY = 0.0043;
-
-/*
-  Розташування будинків.
-*/
 
 const HOUSE_LEFT_X = -23;
 const HOUSE_RIGHT_X = 23;
@@ -90,57 +66,12 @@ const HOUSE_Z_POSITIONS = [
   30
 ];
 
-const HOUSE_LEFT_ROTATION =
-  Math.PI / 2;
-
-const HOUSE_RIGHT_ROTATION =
-  -Math.PI / 2;
-
-/*
-  Тротуари.
-*/
+const HOUSE_LEFT_ROTATION = Math.PI / 2;
+const HOUSE_RIGHT_ROTATION = -Math.PI / 2;
 
 const SIDEWALK_LEFT_X = -8;
 const SIDEWALK_RIGHT_X = 8;
-
 const SIDEWALK_WIDTH = 4.3;
-
-/*
-  Положення пляшки.
-
-  Якщо пляшка дивиться не в той бік,
-  можна змінювати ці три rotation.
-*/
-
-const BOTTLE_BASE_POSITION =
-  new THREE.Vector3(
-    0.43,
-    -0.52,
-    -0.82
-  );
-
-const BOTTLE_BASE_ROTATION =
-  new THREE.Euler(
-    0.15,
-    0.18,
-    -0.15,
-    "XYZ"
-  );
-
-const BOTTLE_DRINK_POSITION =
-  new THREE.Vector3(
-    0.08,
-    -0.07,
-    -0.34
-  );
-
-const BOTTLE_DRINK_ROTATION =
-  new THREE.Euler(
-    1.22,
-    0.18,
-    0.08,
-    "XYZ"
-  );
 
 const DRINK_DURATION = 4;
 
@@ -149,49 +80,31 @@ const DRINK_DURATION = 4;
 ===================================================== */
 
 const loadingScreen =
-  document.getElementById(
-    "loadingScreen"
-  );
+  document.getElementById("loadingScreen");
 
 const loadingText =
-  document.getElementById(
-    "loadingText"
-  );
+  document.getElementById("loadingText");
 
 const desktopHint =
-  document.getElementById(
-    "desktopHint"
-  );
+  document.getElementById("desktopHint");
 
 const mobileHint =
-  document.getElementById(
-    "mobileHint"
-  );
+  document.getElementById("mobileHint");
 
 const joystick =
-  document.getElementById(
-    "joystick"
-  );
+  document.getElementById("joystick");
 
 const joystickStick =
-  document.getElementById(
-    "joystickStick"
-  );
+  document.getElementById("joystickStick");
 
 const lookZone =
-  document.getElementById(
-    "lookZone"
-  );
+  document.getElementById("lookZone");
 
 const drinkButton =
-  document.getElementById(
-    "drinkButton"
-  );
+  document.getElementById("drinkButton");
 
 const isMobile =
-  window.matchMedia(
-    "(pointer: coarse)"
-  ).matches ||
+  window.matchMedia("(pointer: coarse)").matches ||
   navigator.maxTouchPoints > 0;
 
 function setLoadingText(text) {
@@ -200,14 +113,20 @@ function setLoadingText(text) {
   }
 }
 
+let loadingHidden = false;
+
 function hideLoadingScreen() {
+  if (loadingHidden) {
+    return;
+  }
+
+  loadingHidden = true;
+
   setLoadingText("Готово!");
 
   setTimeout(() => {
-    loadingScreen?.classList.add(
-      "hidden"
-    );
-  }, 350);
+    loadingScreen?.classList.add("hidden");
+  }, 250);
 
   setTimeout(() => {
     if (desktopHint) {
@@ -224,8 +143,7 @@ function hideLoadingScreen() {
    SCENE
 ===================================================== */
 
-const scene =
-  new THREE.Scene();
+const scene = new THREE.Scene();
 
 scene.background =
   new THREE.Color(0x7895a8);
@@ -274,11 +192,6 @@ document.body.appendChild(
 
 /* =====================================================
    PLAYER AND CAMERA
-
-   Висота знаходиться на eyePivot.
-   Камера має позицію 0,0,0.
-   Тому погляд униз більше не опускає
-   голову на землю.
 ===================================================== */
 
 const player =
@@ -324,144 +237,7 @@ let yaw = 0;
 let pitch = 0;
 
 /* =====================================================
-   STATIC COLLIDERS
-===================================================== */
-
-const staticColliders = [];
-
-function addHouseCollider(
-  object,
-  padding = 0.15
-) {
-  object.updateMatrixWorld(true);
-
-  const box =
-    new THREE.Box3()
-      .setFromObject(
-        object,
-        true
-      );
-
-  /*
-    Трохи зменшуємо колізію,
-    щоб дах не блокував гравця
-    далеко від справжньої стіни.
-  */
-
-  const shrink = 0.3;
-
-  if (
-    box.max.x - box.min.x >
-    shrink * 2
-  ) {
-    box.min.x += shrink;
-    box.max.x -= shrink;
-  }
-
-  if (
-    box.max.z - box.min.z >
-    shrink * 2
-  ) {
-    box.min.z += shrink;
-    box.max.z -= shrink;
-  }
-
-  box.min.x -= padding;
-  box.max.x += padding;
-
-  box.min.z -= padding;
-  box.max.z += padding;
-
-  staticColliders.push(box);
-}
-
-function playerCollidesAt(x, z) {
-  for (
-    const box of staticColliders
-  ) {
-    const closestX =
-      THREE.MathUtils.clamp(
-        x,
-        box.min.x,
-        box.max.x
-      );
-
-    const closestZ =
-      THREE.MathUtils.clamp(
-        z,
-        box.min.z,
-        box.max.z
-      );
-
-    const dx =
-      x - closestX;
-
-    const dz =
-      z - closestZ;
-
-    if (
-      dx * dx + dz * dz <
-      PLAYER_RADIUS *
-        PLAYER_RADIUS
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/* =====================================================
-   SKYBOX
-===================================================== */
-
-const pmremGenerator =
-  new THREE.PMREMGenerator(
-    renderer
-  );
-
-pmremGenerator
-  .compileEquirectangularShader();
-
-async function loadSkybox() {
-  try {
-    const loader =
-      new EXRLoader();
-
-    const texture =
-      await loader.loadAsync(
-        SKYBOX_FILE
-      );
-
-    texture.mapping =
-      THREE.EquirectangularReflectionMapping;
-
-    scene.background = texture;
-
-    const environment =
-      pmremGenerator
-        .fromEquirectangular(
-          texture
-        )
-        .texture;
-
-    scene.environment =
-      environment;
-
-    pmremGenerator.dispose();
-  } catch (error) {
-    console.error(
-      "Skybox error:",
-      error
-    );
-
-    scene.background =
-      new THREE.Color(0x7895a8);
-  }
-}
-
-/* =====================================================
-   LIGHTS
+   LIGHTING
 ===================================================== */
 
 const hemisphereLight =
@@ -531,16 +307,11 @@ scene.add(
 const textureLoader =
   new THREE.TextureLoader();
 
-async function loadFirstTexture(
-  candidates
-) {
-  for (
-    const file of candidates
-  ) {
+async function loadFirstTexture(candidates) {
+  for (const file of candidates) {
     try {
       const texture =
-        await textureLoader
-          .loadAsync(file);
+        await textureLoader.loadAsync(file);
 
       console.log(
         "Texture loaded:",
@@ -557,7 +328,7 @@ async function loadFirstTexture(
   }
 
   throw new Error(
-    "No texture file was found"
+    "No matching texture was found"
   );
 }
 
@@ -587,6 +358,45 @@ function prepareTexture(
   texture.needsUpdate = true;
 
   return texture;
+}
+
+/* =====================================================
+   SKY
+===================================================== */
+
+async function loadSky() {
+  const generator =
+    new THREE.PMREMGenerator(
+      renderer
+    );
+
+  try {
+    const texture =
+      await new EXRLoader()
+        .loadAsync(FILES.sky);
+
+    texture.mapping =
+      THREE.EquirectangularReflectionMapping;
+
+    scene.background = texture;
+
+    scene.environment =
+      generator
+        .fromEquirectangular(
+          texture
+        )
+        .texture;
+  } catch (error) {
+    console.error(
+      "Sky error:",
+      error
+    );
+
+    scene.background =
+      new THREE.Color(0x7895a8);
+  } finally {
+    generator.dispose();
+  }
 }
 
 /* =====================================================
@@ -621,7 +431,7 @@ async function loadGrass() {
   try {
     const texture =
       await loadFirstTexture(
-        GRASS_FILES
+        FILES.grass
       );
 
     prepareTexture(
@@ -693,7 +503,7 @@ async function loadConcrete() {
   try {
     const texture =
       await loadFirstTexture(
-        CONCRETE_FILES
+        FILES.concrete
       );
 
     prepareTexture(
@@ -720,45 +530,95 @@ async function loadConcrete() {
 }
 
 /* =====================================================
+   COLLISION
+===================================================== */
+
+const staticColliders = [];
+
+function addColliderFromObject(object) {
+  object.updateMatrixWorld(true);
+
+  const box =
+    new THREE.Box3()
+      .setFromObject(
+        object,
+        true
+      );
+
+  const shrink = 0.45;
+
+  if (
+    box.max.x - box.min.x >
+    shrink * 2
+  ) {
+    box.min.x += shrink;
+    box.max.x -= shrink;
+  }
+
+  if (
+    box.max.z - box.min.z >
+    shrink * 2
+  ) {
+    box.min.z += shrink;
+    box.max.z -= shrink;
+  }
+
+  staticColliders.push(
+    box.clone()
+  );
+}
+
+function playerCollidesAt(x, z) {
+  for (
+    const box of staticColliders
+  ) {
+    const closestX =
+      THREE.MathUtils.clamp(
+        x,
+        box.min.x,
+        box.max.x
+      );
+
+    const closestZ =
+      THREE.MathUtils.clamp(
+        z,
+        box.min.z,
+        box.max.z
+      );
+
+    const dx =
+      x - closestX;
+
+    const dz =
+      z - closestZ;
+
+    if (
+      dx * dx + dz * dz <
+      PLAYER_RADIUS *
+      PLAYER_RADIUS
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/* =====================================================
    MODEL HELPERS
 ===================================================== */
 
-function enableModelShadows(
+function enableShadows(
   object,
-  fallbackMaterial = null
+  material = null
 ) {
   object.traverse((child) => {
     if (!child.isMesh) {
       return;
     }
 
-    if (fallbackMaterial) {
-      child.material =
-        fallbackMaterial;
-    }
-
-    const materials =
-      Array.isArray(
-        child.material
-      )
-        ? child.material
-        : [child.material];
-
-    for (
-      const material of materials
-    ) {
-      if (material?.map) {
-        material.map.colorSpace =
-          THREE.SRGBColorSpace;
-
-        material.map.needsUpdate =
-          true;
-      }
-
-      if (material) {
-        material.needsUpdate =
-          true;
-      }
+    if (material) {
+      child.material = material;
     }
 
     child.castShadow = true;
@@ -800,9 +660,7 @@ function scaleHorizontal(
   object.updateMatrixWorld(true);
 }
 
-function centerAndGround(
-  object
-) {
+function centerAndGround(object) {
   object.updateMatrixWorld(true);
 
   const box =
@@ -825,88 +683,30 @@ function centerAndGround(
 }
 
 /* =====================================================
-   BAMBO HOUSES
+   HOUSES
 ===================================================== */
 
-const houseFallbackMaterial =
+const houseMaterial =
   new THREE.MeshStandardMaterial({
     color: 0xa89f90,
     roughness: 0.82,
     metalness: 0.02
   });
 
-async function loadHouse() {
-  try {
-    const mtlLoader =
-      new MTLLoader();
-
-    mtlLoader.setPath(
-      HOUSE_FOLDER
-    );
-
-    mtlLoader.setResourcePath(
-      HOUSE_FOLDER
-    );
-
-    const materials =
-      await mtlLoader.loadAsync(
-        HOUSE_MTL_FILE
-      );
-
-    materials.preload();
-
-    const objLoader =
-      new OBJLoader();
-
-    objLoader.setPath(
-      HOUSE_FOLDER
-    );
-
-    objLoader.setMaterials(
-      materials
-    );
-
-    const house =
-      await objLoader.loadAsync(
-        HOUSE_OBJ_FILE
-      );
-
-    enableModelShadows(
-      house
-    );
-
-    return house;
-  } catch (error) {
-    console.warn(
-      "Bambo_House.mtl was not loaded.",
-      error
-    );
-
-    const objLoader =
-      new OBJLoader();
-
-    objLoader.setPath(
-      HOUSE_FOLDER
-    );
-
-    const house =
-      await objLoader.loadAsync(
-        HOUSE_OBJ_FILE
-      );
-
-    enableModelShadows(
-      house,
-      houseFallbackMaterial
-    );
-
-    return house;
-  }
-}
-
 async function createHouses() {
   try {
+    const loader =
+      new OBJLoader();
+
     const loadedHouse =
-      await loadHouse();
+      await loader.loadAsync(
+        FILES.house
+      );
+
+    enableShadows(
+      loadedHouse,
+      houseMaterial
+    );
 
     scaleHorizontal(
       loadedHouse,
@@ -945,9 +745,7 @@ async function createHouses() {
 
       copy.updateMatrixWorld(true);
 
-      addHouseCollider(
-        copy
-      );
+      addColliderFromObject(copy);
     }
 
     for (
@@ -975,61 +773,108 @@ async function createHouses() {
 }
 
 /* =====================================================
-   CORONA BOTTLE TOOL
+   BOTTLE
 ===================================================== */
 
 const bottleRoot =
   new THREE.Group();
 
+camera.add(bottleRoot);
+
+const bottleBasePosition =
+  new THREE.Vector3(
+    0.43,
+    -0.52,
+    -0.82
+  );
+
+const bottleDrinkPosition =
+  new THREE.Vector3(
+    0.08,
+    -0.07,
+    -0.34
+  );
+
+const bottleBaseEuler =
+  new THREE.Euler(
+    0.15,
+    0.18,
+    -0.15
+  );
+
+const bottleDrinkEuler =
+  new THREE.Euler(
+    1.25,
+    0.15,
+    0.08
+  );
+
+const bottleBaseQuaternion =
+  new THREE.Quaternion()
+    .setFromEuler(
+      bottleBaseEuler
+    );
+
+const bottleDrinkQuaternion =
+  new THREE.Quaternion()
+    .setFromEuler(
+      bottleDrinkEuler
+    );
+
 bottleRoot.position.copy(
-  BOTTLE_BASE_POSITION
+  bottleBasePosition
 );
 
-bottleRoot.rotation.copy(
-  BOTTLE_BASE_ROTATION
+bottleRoot.quaternion.copy(
+  bottleBaseQuaternion
 );
 
-camera.add(
-  bottleRoot
-);
+bottleRoot.visible = false;
 
 let bottleLoaded = false;
 
 async function loadBottle() {
   try {
-    const bottleTexture =
-      await textureLoader.loadAsync(
-        BOTTLE_TEXTURE_FILE
-      );
-
-    bottleTexture.colorSpace =
-      THREE.SRGBColorSpace;
-
-    bottleTexture.anisotropy =
-      renderer.capabilities
-        .getMaxAnisotropy();
-
-    const material =
+    let bottleMaterial =
       new THREE.MeshStandardMaterial({
-        map: bottleTexture,
-        color: 0xffffff,
-
+        color: 0xd3a84b,
         roughness: 0.42,
-        metalness: 0.05,
-
-        transparent: true,
-        opacity: 0.96,
-
-        side: THREE.DoubleSide
+        metalness: 0.05
       });
 
-    const loader =
-      new OBJLoader();
+    try {
+      const texture =
+        await textureLoader.loadAsync(
+          FILES.bottleTexture
+        );
+
+      texture.colorSpace =
+        THREE.SRGBColorSpace;
+
+      texture.anisotropy =
+        renderer.capabilities
+          .getMaxAnisotropy();
+
+      bottleMaterial =
+        new THREE.MeshStandardMaterial({
+          map: texture,
+          color: 0xffffff,
+          roughness: 0.42,
+          metalness: 0.05,
+          side: THREE.DoubleSide
+        });
+    } catch (error) {
+      console.warn(
+        "Bottle texture error:",
+        error
+      );
+    }
 
     const bottle =
-      await loader.loadAsync(
-        BOTTLE_MODEL_FILE
-      );
+      await new OBJLoader()
+        .loadAsync(
+          FILES.bottle
+        );
 
     bottle.traverse((child) => {
       if (!child.isMesh) {
@@ -1037,16 +882,11 @@ async function loadBottle() {
       }
 
       child.material =
-        material;
+        bottleMaterial;
 
       child.castShadow = false;
       child.receiveShadow = false;
     });
-
-    /*
-      Автоматично робимо пляшку
-      зручною за розміром.
-    */
 
     bottle.updateMatrixWorld(true);
 
@@ -1062,17 +902,16 @@ async function loadBottle() {
 
     box.getSize(size);
 
-    const largestSide =
+    const largest =
       Math.max(
         size.x,
         size.y,
         size.z
       );
 
-    if (largestSide > 0) {
+    if (largest > 0) {
       bottle.scale.setScalar(
-        0.82 /
-        largestSide
+        0.78 / largest
       );
     }
 
@@ -1096,29 +935,31 @@ async function loadBottle() {
       -center.z
     );
 
-    bottleRoot.add(
-      bottle
-    );
+    bottle.rotation.y =
+      Math.PI;
 
+    bottleRoot.add(bottle);
+
+    bottleRoot.visible = true;
     bottleLoaded = true;
   } catch (error) {
     console.error(
-      "Corona bottle error:",
+      "Bottle error:",
       error
     );
   }
 }
 
 /* =====================================================
-   DRINK ANIMATION
+   DRINKING
 ===================================================== */
 
 let drinking = false;
-let drinkStartTime = 0;
+let drinkStart = 0;
 
-const drinkSoundTimers = [];
+const drinkTimers = [];
 
-function smooth01(value) {
+function smoothStep(value) {
   const x =
     THREE.MathUtils.clamp(
       value,
@@ -1127,8 +968,7 @@ function smooth01(value) {
     );
 
   return (
-    x *
-    x *
+    x * x *
     (3 - 2 * x)
   );
 }
@@ -1136,10 +976,10 @@ function smooth01(value) {
 function playDrinkSound() {
   const sound =
     new Audio(
-      DRINK_SOUND_FILE
+      FILES.drink
     );
 
-  sound.volume = 0.62;
+  sound.volume = 0.65;
 
   sound.play()
     .catch(() => {});
@@ -1147,10 +987,10 @@ function playDrinkSound() {
 
 function clearDrinkTimers() {
   while (
-    drinkSoundTimers.length > 0
+    drinkTimers.length > 0
   ) {
     clearTimeout(
-      drinkSoundTimers.pop()
+      drinkTimers.pop()
     );
   }
 }
@@ -1165,9 +1005,8 @@ function startDrinking() {
 
   drinking = true;
 
-  drinkStartTime =
-    performance.now() /
-    1000;
+  drinkStart =
+    performance.now() / 1000;
 
   clearDrinkTimers();
 
@@ -1182,40 +1021,26 @@ function startDrinking() {
         i * 1000
       );
 
-    drinkSoundTimers.push(
-      timer
-    );
+    drinkTimers.push(timer);
   }
 }
 
-function updateDrinkAnimation() {
+function updateDrinking() {
   if (!drinking) {
     return;
   }
 
   const now =
-    performance.now() /
-    1000;
+    performance.now() / 1000;
 
   const elapsed =
-    now - drinkStartTime;
+    now - drinkStart;
 
   let blend = 0;
 
-  /*
-    0.0–0.65:
-    піднести пляшку.
-
-    0.65–3.35:
-    пити.
-
-    3.35–4.0:
-    повернути вниз.
-  */
-
   if (elapsed < 0.65) {
     blend =
-      smooth01(
+      smoothStep(
         elapsed / 0.65
       );
   } else if (
@@ -1227,7 +1052,7 @@ function updateDrinkAnimation() {
   ) {
     blend =
       1 -
-      smooth01(
+      smoothStep(
         (elapsed - 3.35) /
         0.65
       );
@@ -1235,72 +1060,52 @@ function updateDrinkAnimation() {
     drinking = false;
 
     bottleRoot.position.copy(
-      BOTTLE_BASE_POSITION
+      bottleBasePosition
     );
 
-    bottleRoot.rotation.copy(
-      BOTTLE_BASE_ROTATION
+    bottleRoot.quaternion.copy(
+      bottleBaseQuaternion
     );
 
     return;
   }
 
-  bottleRoot.position
-    .lerpVectors(
-      BOTTLE_BASE_POSITION,
-      BOTTLE_DRINK_POSITION,
+  bottleRoot.position.lerpVectors(
+    bottleBasePosition,
+    bottleDrinkPosition,
+    blend
+  );
+
+  bottleRoot.quaternion
+    .slerpQuaternions(
+      bottleBaseQuaternion,
+      bottleDrinkQuaternion,
       blend
     );
-
-  bottleRoot.rotation.x =
-    THREE.MathUtils.lerp(
-      BOTTLE_BASE_ROTATION.x,
-      BOTTLE_DRINK_ROTATION.x,
-      blend
-    );
-
-  bottleRoot.rotation.y =
-    THREE.MathUtils.lerp(
-      BOTTLE_BASE_ROTATION.y,
-      BOTTLE_DRINK_ROTATION.y,
-      blend
-    );
-
-  bottleRoot.rotation.z =
-    THREE.MathUtils.lerp(
-      BOTTLE_BASE_ROTATION.z,
-      BOTTLE_DRINK_ROTATION.z,
-      blend
-    );
-
-  /*
-    Легке смішне хитання
-    під час пиття.
-  */
 
   if (
     elapsed >= 0.65 &&
     elapsed < 3.35
   ) {
-    bottleRoot.rotation.z +=
-      Math.sin(
-        elapsed * 8
-      ) * 0.018;
-
     bottleRoot.position.y +=
       Math.sin(
         elapsed * 7
       ) * 0.008;
+
+    bottleRoot.rotation.z +=
+      Math.sin(
+        elapsed * 8
+      ) * 0.018;
   }
 }
 
 /* =====================================================
-   FOOTSTEPS
+   AUDIO
 ===================================================== */
 
 const footsteps =
   new Audio(
-    FOOTSTEPS_FILE
+    FILES.footsteps
   );
 
 footsteps.loop = true;
@@ -1349,28 +1154,19 @@ window.addEventListener(
   { once: true }
 );
 
-function updateFootsteps(
-  actualSpeed
-) {
-  const walking =
-    actualSpeed > 0.35;
-
+function updateFootsteps(speed) {
   if (
-    walking &&
-    audioUnlocked &&
-    !drinking
+    speed > 0.35 &&
+    audioUnlocked
   ) {
     footsteps.playbackRate =
       0.9 +
       Math.min(
-        actualSpeed /
-          WALK_SPEED,
+        speed / WALK_SPEED,
         1
       ) * 0.12;
 
-    if (
-      footsteps.paused
-    ) {
+    if (footsteps.paused) {
       footsteps.play()
         .catch(() => {});
     }
@@ -1378,7 +1174,6 @@ function updateFootsteps(
     !footsteps.paused
   ) {
     footsteps.pause();
-    footsteps.currentTime = 0;
   }
 }
 
@@ -1392,18 +1187,14 @@ const keys =
 document.addEventListener(
   "keydown",
   (event) => {
-    keys.add(
-      event.code
-    );
+    keys.add(event.code);
   }
 );
 
 document.addEventListener(
   "keyup",
   (event) => {
-    keys.delete(
-      event.code
-    );
+    keys.delete(event.code);
   }
 );
 
@@ -1497,8 +1288,7 @@ function updateJoystick(
   }
 
   const rect =
-    joystick
-      .getBoundingClientRect();
+    joystick.getBoundingClientRect();
 
   const centerX =
     rect.left +
@@ -1523,8 +1313,7 @@ function updateJoystick(
     );
 
   if (
-    distance >
-    maxDistance
+    distance > maxDistance
   ) {
     dx =
       dx /
@@ -1541,12 +1330,10 @@ function updateJoystick(
     `translate(${dx}px, ${dy}px)`;
 
   joystickInput.x =
-    dx /
-    maxDistance;
+    dx / maxDistance;
 
   joystickInput.y =
-    -dy /
-    maxDistance;
+    -dy / maxDistance;
 
   const deadZone = 0.08;
 
@@ -1643,11 +1430,10 @@ joystick?.addEventListener(
 );
 
 /* =====================================================
-   MOBILE LOOK
+   MOBILE CAMERA
 ===================================================== */
 
 let lookPointerId = null;
-
 let previousLookX = 0;
 let previousLookY = 0;
 
@@ -1828,6 +1614,26 @@ function getMovementInput() {
 function movePlayerWithCollision(
   movement
 ) {
+  const length =
+    Math.hypot(
+      movement.x,
+      movement.z
+    );
+
+  const steps =
+    Math.max(
+      1,
+      Math.ceil(
+        length / 0.12
+      )
+    );
+
+  const stepX =
+    movement.x / steps;
+
+  const stepZ =
+    movement.z / steps;
+
   const limitX =
     BASE_WIDTH / 2 -
     PLAYER_RADIUS;
@@ -1836,50 +1642,50 @@ function movePlayerWithCollision(
     BASE_LENGTH / 2 -
     PLAYER_RADIUS;
 
-  /*
-    Рух X і Z окремо.
-    Завдяки цьому гравець ковзає
-    вздовж стіни, а не застрягає.
-  */
-
-  const nextX =
-    THREE.MathUtils.clamp(
-      player.position.x +
-        movement.x,
-      -limitX,
-      limitX
-    );
-
-  if (
-    !playerCollidesAt(
-      nextX,
-      player.position.z
-    )
+  for (
+    let i = 0;
+    i < steps;
+    i++
   ) {
-    player.position.x =
-      nextX;
-  } else {
-    velocity.x = 0;
-  }
+    const nextX =
+      THREE.MathUtils.clamp(
+        player.position.x +
+          stepX,
+        -limitX,
+        limitX
+      );
 
-  const nextZ =
-    THREE.MathUtils.clamp(
-      player.position.z +
-        movement.z,
-      -limitZ,
-      limitZ
-    );
+    if (
+      !playerCollidesAt(
+        nextX,
+        player.position.z
+      )
+    ) {
+      player.position.x =
+        nextX;
+    } else {
+      velocity.x = 0;
+    }
 
-  if (
-    !playerCollidesAt(
-      player.position.x,
-      nextZ
-    )
-  ) {
-    player.position.z =
-      nextZ;
-  } else {
-    velocity.z = 0;
+    const nextZ =
+      THREE.MathUtils.clamp(
+        player.position.z +
+          stepZ,
+        -limitZ,
+        limitZ
+      );
+
+    if (
+      !playerCollidesAt(
+        player.position.x,
+        nextZ
+      )
+    ) {
+      player.position.z =
+        nextZ;
+    } else {
+      velocity.z = 0;
+    }
   }
 
   player.position.y = 0;
@@ -1930,14 +1736,9 @@ function updateMovement(
     movementDirection.normalize();
   }
 
-  /*
-    Під час пиття можна рухатися,
-    але трохи повільніше.
-  */
-
   const speedMultiplier =
     drinking
-      ? 0.58
+      ? 0.65
       : 1;
 
   targetVelocity
@@ -2001,12 +1802,12 @@ function updateMovement(
 }
 
 /* =====================================================
-   WALK BOB
+   WALKING BOB
 ===================================================== */
 
 let walkingTime = 0;
 
-function updateWalkBob(
+function updateWalkingBob(
   deltaTime
 ) {
   const amount =
@@ -2063,53 +1864,52 @@ function updateWalkBob(
    LOAD WORLD
 ===================================================== */
 
-function waitWithTimeout(promise, name, timeoutMs = 12000) {
-  return Promise.race([
-    promise,
-
-    new Promise((resolve) => {
-      setTimeout(() => {
-        console.warn(`${name} loading timeout`);
-        resolve(null);
-      }, timeoutMs);
-    })
-  ]);
+function timeout(
+  milliseconds
+) {
+  return new Promise(
+    (resolve) => {
+      setTimeout(
+        resolve,
+        milliseconds
+      );
+    }
+  );
 }
 
 async function loadWorld() {
-  setLoadingText("Завантаження SoftStreer...");
+  setLoadingText(
+    "Завантаження SoftStreer…"
+  );
 
-  try {
-    const results = await Promise.allSettled([
-      waitWithTimeout(loadSkybox(), "Skybox"),
-      waitWithTimeout(loadGrass(), "Grass"),
-      waitWithTimeout(loadConcrete(), "Concrete"),
-      waitWithTimeout(createHouses(), "Houses"),
-      waitWithTimeout(loadBottle(), "Bottle")
+  const assetLoading =
+    Promise.allSettled([
+      loadSky(),
+      loadGrass(),
+      loadConcrete(),
+      createHouses(),
+      loadBottle()
     ]);
 
-    for (const result of results) {
-      if (result.status === "rejected") {
-        console.error("Asset error:", result.reason);
-      }
-    }
-  } catch (error) {
-    console.error("World loading error:", error);
-  } finally {
-    hideLoadingScreen();
-  }
+  await Promise.race([
+    assetLoading,
+    timeout(8000)
+  ]);
+
+  hideLoadingScreen();
 }
 
 loadWorld();
 
 /*
-  Аварійний захист:
-  навіть якщо якийсь loader повністю зависне,
-  екран завантаження закриється через 14 секунд.
+  Екран завантаження все одно зникне,
+  навіть якщо якийсь файл не відповість.
 */
-setTimeout(() => {
-  loadingScreen?.classList.add("hidden");
-}, 14000);
+
+setTimeout(
+  hideLoadingScreen,
+  9000
+);
 
 /* =====================================================
    LOOP
@@ -2129,21 +1929,18 @@ function animate() {
       0.033
     );
 
-  player.rotation.y =
-    yaw;
-
-  eyePivot.rotation.x =
-    pitch;
+  player.rotation.y = yaw;
+  eyePivot.rotation.x = pitch;
 
   updateMovement(
     deltaTime
   );
 
-  updateWalkBob(
+  updateWalkingBob(
     deltaTime
   );
 
-  updateDrinkAnimation();
+  updateDrinking();
 
   renderer.render(
     scene,
@@ -2164,7 +1961,8 @@ window.addEventListener(
       window.innerWidth /
       window.innerHeight;
 
-    camera.updateProjectionMatrix();
+    camera
+      .updateProjectionMatrix();
 
     renderer.setSize(
       window.innerWidth,
@@ -2187,7 +1985,7 @@ if (
       navigator
         .serviceWorker
         .register(
-          "./service-worker.js"
+          "./service-worker.js?v=5"
         )
         .catch((error) => {
           console.error(
@@ -2198,4 +1996,3 @@ if (
     }
   );
 }
-
